@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="240dp"
+    android:height="240dp"
+    android:viewportWidth="240"
+    android:viewportHeight="240">
+
+    <!-- Background transparan -->
+
+    <!-- Main A emblem: navy blue -->
+    <path
+        android:fillColor="#102B46"
+        android:pathData="
+            M120,15
+            C115,15 111,18 108,23
+            L53,103
+            L75,103
+            L120,40
+            L165,103
+            L187,103
+            L132,23
+            C129,18 125,15 120,15 Z" />
+
+    <!-- Automotive roof / motion line -->
+    <path
+        android:fillColor="#2563A6"
+        android:pathData="
+            M28,112
+            C58,103 85,85 119,83
+            C142,82 160,89 177,103
+            L194,111
+            C171,103 153,99 132,100
+            C95,101 62,113 28,112 Z" />
+
+    <!-- Vehicle body -->
+    <path
+        android:fillColor="#102B46"
+        android:pathData="
+            M78,117
+            L94,101
+            C98,97 103,96 111,96
+            L150,96
+            C161,96 170,101 177,109
+            L192,128
+            L174,128
+            L166,117
+            L92,117
+            L83,128
+            L65,128 Z" />
+
+    <!-- Silver lower accent -->
+    <path
+        android:fillColor="#8B9AA9"
+        android:pathData="
+            M27,118
+            L68,118
+            L60,125
+            L27,125 Z" />
+
+    <!-- Letter A accent / foundation -->
+    <path
+        android:fillColor="#102B46"
+        android:pathData="
+            M91,123
+            L105,123
+            L105,139
+            L91,139 Z" />
+
+    <path
+        android:fillColor="#102B46"
+        android:pathData="
+            M135,123
+            L149,123
+            L149,139
+            L135,139 Z" />
+
+    <!-- Silver baseline -->
+    <path
+        android:fillColor="#8B9AA9"
+        android:pathData="
+            M50,148
+            L190,148
+            L190,151
+            L50,151 Z" />
+
+</vector>
