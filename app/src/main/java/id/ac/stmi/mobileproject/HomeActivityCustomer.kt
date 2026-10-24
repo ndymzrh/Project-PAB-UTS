@@ -15,6 +15,7 @@ import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
 import java.text.NumberFormat
 import java.util.Locale
+import kotlin.jvm.java
 
 class HomeActivityCustomer : AppCompatActivity() {
 
@@ -160,7 +161,9 @@ class HomeActivityCustomer : AppCompatActivity() {
         binding.bottomNav.setOnItemSelectedListener { item ->
             when (item.itemId) {
                 R.id.nav_home -> true
-                R.id.nav_promo -> { toast("Promo"); true }
+                R.id.nav_promo -> { startActivity(Intent(this, PromoActivityCustomer::class.java))
+                    false // false = tab Beranda tetap terpilih di halaman ini
+                }
                 R.id.nav_booking -> { toast("Buat booking baru"); false }
                 R.id.nav_bengkel -> { toast("Peta bengkel"); true }
                 R.id.nav_account -> {

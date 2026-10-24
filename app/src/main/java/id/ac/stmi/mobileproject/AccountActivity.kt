@@ -199,7 +199,9 @@ class AccountActivity : AppCompatActivity() {
     private fun setupClicks() {
         binding.btnEditProfile.setOnClickListener { toast("Edit profil") }
         binding.btnTrackService.setOnClickListener { toast("Pantau servis") }
-        binding.btnAddCar.setOnClickListener { toast("Tambah mobil") }
+        binding.btnAddCar.setOnClickListener {
+            startActivity(Intent(this, AddVehicleActivityCustomer::class.java))
+        }
         binding.btnManageCar.setOnClickListener { toast("Kelola mobil") }
         binding.btnBookService.setOnClickListener { toast("Booking servis") }
         binding.fabBooking.setOnClickListener { toast("Buat booking baru") }
