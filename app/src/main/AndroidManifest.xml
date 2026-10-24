@@ -47,29 +47,18 @@
             android:exported="false"
             android:windowSoftInputMode="adjustResize" />
         <activity
-            android:name=".RiwayatActivity"
+            android:name=".PromoActivityCustomer"
             android:exported="false"
             android:windowSoftInputMode="adjustResize" />
         <activity
-            android:name=".item_riwayat_point"
+            android:name=".PromoDetailActivity"
             android:exported="false"
             android:windowSoftInputMode="adjustResize" />
         <activity
-            android:name=".PromoActivityPetugas"
+            android:name=".PetugasPromoActivity"
             android:exported="false"
             android:windowSoftInputMode="adjustResize" />
-        <activity
-            android:name=".AddPromoActivity"
-            android:exported="false"
-            android:windowSoftInputMode="adjustResize" />
-        <activity
-            android:name=".DetailPromoPetugas"
-            android:exported="false"
-            android:windowSoftInputMode="adjustResize" />
-        <activity
-            android:name=".PetugasPromo"
-            android:exported="false"
-            android:windowSoftInputMode="adjustResize" />
+
     </application>
 
 </manifest>

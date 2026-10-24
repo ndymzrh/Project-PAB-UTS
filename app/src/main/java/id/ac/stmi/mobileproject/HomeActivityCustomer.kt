@@ -168,7 +168,10 @@ class HomeActivityCustomer : AppCompatActivity() {
         binding.bottomNav.setOnItemSelectedListener { item ->
             when (item.itemId) {
                 R.id.nav_home -> true
-                R.id.nav_promo -> { toast("Promo"); true }
+                R.id.nav_promo -> { startActivity(Intent(this, PromoActivityCustomer::class.java))
+                    overridePendingTransition(0, 0)
+                    false
+                }
                 R.id.nav_bengkel -> { toast("Peta bengkel"); true }
                 R.id.nav_account -> {
                     startActivity(Intent(this, AccountActivity::class.java))
