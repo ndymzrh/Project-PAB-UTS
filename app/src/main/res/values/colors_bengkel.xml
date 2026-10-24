@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- res/values/colors.xml -->
+<resources>
+    <color name="bk_primary">#1F3A5F</color>
+    <color name="bk_primary_dark">#14263F</color>
+    <color name="bk_accent">#FF7A1A</color>
+    <color name="bk_bg_screen">#F5F7FA</color>
+    <color name="bk_stroke_soft">#E6EAF0</color>
+    <color name="bk_track_grey">#DDE1E7</color>
+    <color name="bk_text_primary">#2B2F36</color>
+    <color name="bk_text_secondary">#6B7380</color>
+    <color name="bk_icon_circle_bg">#EAF0F8</color>
+    <color name="bk_chip_bg">#FFE9D6</color>
+    <color name="bk_red_dot">#D32F2F</color>
+    <color name="bk_nav_inactive">#8A929E</color>
+</resources>

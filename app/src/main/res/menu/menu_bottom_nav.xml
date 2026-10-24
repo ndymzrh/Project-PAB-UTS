@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- res/menu/menu_bottom_nav.xml -->
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/nav_home"
+        android:icon="@drawable/ic_home"
+        android:title="@string/nav_beranda" />
+    <item
+        android:id="@+id/nav_promo"
+        android:icon="@drawable/ic_gift"
+        android:title="@string/nav_promo" />
+    <!-- Item tengah: tempat tombol FAB Booking (klik ditangani oleh FAB) -->
+    <item
+        android:id="@+id/nav_booking"
+        android:enabled="false"
+        android:icon="@drawable/ic_calendar"
+        android:title="@string/nav_booking" />
+    <item
+        android:id="@+id/nav_bengkel"
+        android:icon="@drawable/ic_location"
+        android:title="@string/nav_bengkel" />
+    <item
+        android:id="@+id/nav_account"
+        android:icon="@drawable/ic_person"
+        android:title="@string/nav_akun" />
+</menu>

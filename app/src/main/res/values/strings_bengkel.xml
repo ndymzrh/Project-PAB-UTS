@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- res/values/strings.xml -->
+<resources>
+    <string name="halo">Halo,</string>
+    <string name="poin_loyalti">Poin Loyalti</string>
+    <string name="poin">poin</string>
+    <string name="mobil_saya">Mobil Saya</string>
+    <string name="servis_berikutnya">Servis berikutnya</string>
+    <string name="detail">Detail</string>
+    <string name="booking">Booking</string>
+    <string name="layanan">Layanan</string>
+    <string name="bengkel">Bengkel</string>
+    <string name="riwayat">Riwayat</string>
+    <string name="booking_aktif">Booking Aktif</string>
+    <string name="terjadwal">Terjadwal</string>
+    <string name="promosi">Promosi</string>
+    <string name="bahasa">Bahasa</string>
+    <string name="bantuan">Bantuan</string>
+    <string name="notifikasi">Notifikasi</string>
+
+    <!-- Bottom navigation -->
+    <string name="nav_beranda">Beranda</string>
+    <string name="nav_promo">Promo</string>
+    <string name="nav_booking">Booking</string>
+    <string name="nav_bengkel">Bengkel</string>
+    <string name="nav_akun">Akun</string>
+</resources>
