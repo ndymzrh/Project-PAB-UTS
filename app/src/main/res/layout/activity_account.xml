@@ -1,24 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!--
-    res/layout/activity_account.xml  (Halaman Akun)
 
-    Struktur (semua LinearLayout vertikal):
-      root
-      ├─ include_top_bar            -> top bar yang sama dengan halaman Beranda
-      ├─ ScrollView (weight = 1)    -> isi halaman, bisa di-scroll
-      │    └─ LinearLayout vertikal
-      │         ├─ Kartu profil + statistik
-      │         ├─ Kartu "Servis Sedang Berjalan"
-      │         ├─ Kendaraan terdaftar
-      │         ├─ Menu "Layanan & Akun"
-      │         ├─ Menu "Bantuan & Informasi"
-      │         └─ Tombol keluar + versi aplikasi
-      └─ FrameLayout (bottom nav + FAB booking)
--->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
-
+    android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/bk_bg_screen"
@@ -33,7 +18,7 @@
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
-        android:clipToPadding="false"
+        android:clipToPadding="true"
         android:paddingBottom="32dp"
         android:scrollbars="none">
 
@@ -769,6 +754,8 @@
     <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_gravity="bottom"
+        android:id="@+id/navContainer"
         android:clipChildren="false">
 
         <com.google.android.material.bottomnavigation.BottomNavigationView
@@ -776,7 +763,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:background="@android:color/white"
-            app:elevation="12dp"
+            app:elevation="4dp"
             app:itemActiveIndicatorStyle="@null"
             app:itemIconTint="@color/bk_nav_item_color"
             app:itemTextColor="@color/bk_nav_item_color"
@@ -792,7 +779,7 @@
             android:contentDescription="@string/booking"
             android:src="@drawable/ic_calendar"
             app:backgroundTint="@color/bk_accent"
-            app:elevation="8dp"
+            app:elevation="24dp"
             app:tint="@android:color/white" />
     </FrameLayout>
 </LinearLayout>

@@ -47,7 +47,7 @@
             android:exported="false"
             android:windowSoftInputMode="adjustResize" />
         <activity
-            android:name=".PromoActivityCustomer"
+            android:name=".PetugasPromoActivity"
             android:exported="false"
             android:windowSoftInputMode="adjustResize" />
         <activity
@@ -55,10 +55,9 @@
             android:exported="false"
             android:windowSoftInputMode="adjustResize" />
         <activity
-            android:name=".PetugasPromoActivity"
+            android:name=".PromoActivityCustomer"
             android:exported="false"
             android:windowSoftInputMode="adjustResize" />
-
     </application>
 
 </manifest>

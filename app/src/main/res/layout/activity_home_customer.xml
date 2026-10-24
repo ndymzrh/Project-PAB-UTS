@@ -21,7 +21,7 @@
         app:layout_behavior="@string/appbar_scrolling_view_behavior"
         android:clipToPadding="false"
         android:fillViewport="true"
-        android:paddingBottom="96dp">
+        android:paddingBottom="110dp">
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -596,17 +596,20 @@
 
     <!-- ============ BOTTOM NAVIGATION + TOMBOL BOOKING TENGAH ============ -->
     <FrameLayout
+        android:id="@+id/navContainer"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom"
-        android:clipChildren="false">
+        android:clipChildren="false"
+        android:clipToPadding="false">
 
-        <com.google.android.material.bottomnavigation.BottomNavigationView
+    <com.google.android.material.bottomnavigation.BottomNavigationView
             android:id="@+id/bottomNav"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:layout_marginTop="28dp"
             android:background="@android:color/white"
-            app:elevation="12dp"
+            app:elevation="0dp"
             app:itemActiveIndicatorStyle="@null"
             app:itemIconTint="@color/bk_nav_item_color"
             app:itemTextColor="@color/bk_nav_item_color"
@@ -618,11 +621,12 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="top|center_horizontal"
-            android:layout_marginTop="-24dp"
+            android:layout_marginTop="4dp"
             android:contentDescription="@string/booking"
             android:src="@drawable/ic_calendar"
             app:backgroundTint="@color/bk_accent"
-            app:elevation="8dp"
+            android:translationZ="12dp"
+            app:elevation="12dp"
             app:tint="@android:color/white" />
     </FrameLayout>
 
