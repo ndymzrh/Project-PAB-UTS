@@ -161,7 +161,10 @@ class HomeActivityCustomer : AppCompatActivity() {
                 R.id.nav_home -> true
                 R.id.nav_promo -> { toast("Promo"); true }
                 R.id.nav_bengkel -> { toast("Peta bengkel"); true }
-                R.id.nav_account -> { toast("Akun"); true }
+                R.id.nav_account -> {
+                    startActivity(Intent(this, AccountActivity::class.java))
+                    false // false = tab Beranda tetap terpilih di halaman ini
+                }
                 else -> false
             }
         }
