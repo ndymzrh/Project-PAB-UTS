@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Garis pemisah tipis antar baris menu (dipakai sebagai style="@style/AccountDivider") -->
+<resources>
+    <style name="AccountDivider">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">1dp</item>
+        <item name="android:layout_marginStart">68dp</item>
+        <item name="android:layout_marginEnd">16dp</item>
+        <item name="android:background">@color/bk_stroke_soft</item>
+    </style>
+</resources>

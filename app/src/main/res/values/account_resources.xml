@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- res/values/account_resources.xml : warna & teks khusus halaman Akun -->
+<resources>
+    <!-- Warna -->
+    <color name="bk_danger">#D32F2F</color>
+    <color name="bk_danger_bg">#FDE3E1</color>
+    <color name="bk_plate_bg">#EEF1F5</color>
+
+    <!-- Profil -->
+    <string name="akun">Akun</string>
+    <string name="member_loyal">Member Loyal</string>
+    <string name="edit_profil">Edit profil</string>
+    <string name="stat_mobil">Mobil</string>
+    <string name="stat_servis_aktif">Servis Aktif</string>
+    <string name="stat_poin">Poin Annova</string>
+
+    <!-- Servis berjalan -->
+    <string name="servis_berjalan">Servis Sedang Berjalan</string>
+    <string name="pantau">Pantau</string>
+
+    <!-- Kendaraan -->
+    <string name="kendaraan_terdaftar">Kendaraan Terdaftar</string>
+    <string name="tambah_mobil">Tambah Mobil</string>
+    <string name="mobil_utama">Mobil Utama</string>
+    <string name="odometer_saat_ini">Odometer Saat Ini</string>
+    <string name="servis_berikutnya_label">Servis Berikutnya</string>
+    <string name="kelola_mobil">Kelola Mobil</string>
+    <string name="booking_servis">Booking Servis</string>
+    <string name="belum_ada_mobil">Belum ada mobil terdaftar.\nKetuk \"Tambah Mobil\" untuk memulai.</string>
+
+    <!-- Section -->
+    <string name="section_layanan_akun">LAYANAN &amp; AKUN</string>
+    <string name="section_bantuan_info">BANTUAN &amp; INFORMASI</string>
+
+    <!-- Menu: Layanan & Akun -->
+    <string name="menu_riwayat_title">Riwayat Booking &amp; Servis</string>
+    <string name="menu_riwayat_sub">Buku servis digital &amp; e-faktur bengkel</string>
+    <string name="menu_alamat_title">Alamat &amp; Lokasi Tersimpan</string>
+    <string name="menu_alamat_sub">Rumah, kantor, &amp; radius towing</string>
+    <string name="menu_bayar_title">Metode Pembayaran</string>
+    <string name="menu_bayar_sub">QRIS, Virtual Account, &amp; Kartu Debit</string>
+    <string name="menu_setting_title">Pengaturan &amp; Notifikasi</string>
+    <string name="menu_setting_sub">Pengingat servis berkala &amp; ganti PIN</string>
+
+    <!-- Menu: Bantuan & Informasi -->
+    <string name="menu_cs_title">Customer Care Bengkel</string>
+    <string name="menu_cs_sub">Konsultasi teknis via WhatsApp resmi</string>
+    <string name="menu_faq_title">Pusat Bantuan &amp; FAQ</string>
+    <string name="menu_faq_sub">Panduan estimasi waktu &amp; suku cadang</string>
+    <string name="menu_garansi_title">Kebijakan Garansi &amp; Privasi</string>
+    <string name="menu_garansi_sub">Garansi 1.000 km / 14 hari pengerjaan</string>
+
+    <!-- Logout & footer -->
+    <string name="keluar_akun">Keluar dari Akun</string>
+    <string name="konfirmasi_keluar_title">Keluar dari akun?</string>
+    <string name="konfirmasi_keluar_msg">Kamu harus login lagi untuk memakai aplikasi.</string>
+    <string name="ya_keluar">Ya, keluar</string>
+    <string name="batal">Batal</string>
+    <string name="app_version">Annova AutoCare App v1.0</string>
+    <string name="app_copyright">Standar Bengkel Modern Indonesia © 2026</string>
+</resources>
