@@ -91,5 +91,4 @@
     <string name="hapus_promo">Hapus Promo</string>
     <string name="hapus_promo_ini">Hapus promo ini?</string>
     <string name="pesan_hapus_promo">\"%1$s\" akan dihapus dari daftar dan tidak tampil lagi untuk customer. Tindakan ini tidak dapat dibatalkan.</string>
-
 </resources>
