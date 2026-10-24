@@ -4,6 +4,10 @@ import android.app.Activity
 import android.graphics.Color
 import android.widget.Toast
 import android.content.Intent
+import android.view.View
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.firebase.auth.FirebaseAuth
 import com.google.android.material.appbar.MaterialToolbar
@@ -61,4 +65,17 @@ private fun Activity.performLogout() {
     }
     startActivity(intent)
     finish()
+}
+
+fun Activity.applySystemBarInsets(root: View) {
+    val appBar = findViewById<View>(R.id.topBar).parent as View
+
+    WindowCompat.getInsetsController(window, window.decorView)
+        .isAppearanceLightStatusBars = true
+
+    ViewCompat.setOnApplyWindowInsetsListener(root) { _, insets ->
+        val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+        appBar.setPadding(0, bars.top, 0, 0)
+        insets
+    }
 }

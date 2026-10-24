@@ -12,9 +12,8 @@
     <!-- Item tengah: tempat tombol FAB Booking (klik ditangani oleh FAB) -->
     <item
         android:id="@+id/nav_booking"
-        android:enabled="false"
-        android:icon="@drawable/ic_calendar"
-        android:title="@string/nav_booking" />
+        android:icon="@android:color/transparent"
+        android:title="Booking" />
     <item
         android:id="@+id/nav_bengkel"
         android:icon="@drawable/ic_location"

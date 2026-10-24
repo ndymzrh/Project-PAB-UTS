@@ -4,6 +4,7 @@ import android.content.Intent
 import android.os.Bundle
 import android.view.View
 import android.widget.Toast
+import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
@@ -34,15 +35,11 @@ class AccountActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        enableEdgeToEdge()
         binding = ActivityAccountBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        // Beri padding atas setinggi status bar supaya top bar tidak tertutup
-        ViewCompat.setOnApplyWindowInsetsListener(binding.root) { v, insets ->
-            val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-            v.setPadding(bars.left, bars.top, bars.right, 0)
-            insets
-        }
+        applySystemBarInsets(binding.main)
 
         // Belum login -> kembali ke halaman login
         val uid = auth.currentUser?.uid
@@ -56,9 +53,9 @@ class AccountActivity : AppCompatActivity() {
         setupClicks()
         setupBottomNav()
 
-        listenUser(uid)         // nama, email, no hp, poin (realtime)
-        listenVehicles(uid)     // daftar mobil (realtime)
-        showActiveService(null) // belum ada data servis -> kartu disembunyikan
+        listenUser(uid)
+        listenVehicles(uid)
+        showActiveService(null)
     }
 
     // ------------------------------------------------------------------

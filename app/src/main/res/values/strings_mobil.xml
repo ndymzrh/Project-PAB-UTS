@@ -2,7 +2,6 @@
 <!-- res/values/strings_mobil.xml (tambahan, tidak mengubah strings_bengkel.xml) -->
 <resources>
     <string name="kembali">Kembali</string>
-    <string name="hapus">Hapus</string>
     <string name="daftar_mobil">Daftar Mobil</string>
     <string name="tambah_mobil">Tambah Mobil</string>
     <string name="simpan_mobil">Simpan Mobil</string>
@@ -40,7 +39,6 @@
     <string name="jumlah_mobil">%1$d mobil terdaftar</string>
     <string name="hapus_mobil_judul">Hapus mobil?</string>
     <string name="hapus_mobil_pesan">%1$s akan dihapus dari daftar Anda.</string>
-    <string name="batal">Batal</string>
     <string name="error_wajib">Wajib diisi</string>
     <string name="error_tahun">Tahun tidak valid</string>
     <string name="error_km_servis">Tidak boleh lebih besar dari odometer</string>
