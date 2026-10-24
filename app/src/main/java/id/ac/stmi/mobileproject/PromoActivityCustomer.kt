@@ -4,6 +4,7 @@ import android.content.Intent
 import android.content.res.ColorStateList
 import android.graphics.Color
 import android.os.Bundle
+import android.view.View
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
@@ -21,6 +22,11 @@ class PromoActivityCustomer : AppCompatActivity() {
     private val db by lazy { FirebaseFirestore.getInstance() }
     private val idFormat = NumberFormat.getIntegerInstance(Locale("id", "ID"))
 
+    private var filter: KategoriPromo = KategoriPromo.SERVIS // chip Servis terpilih di awal
+    private lateinit var promoAdapter: PetugasPromoAdapter
+    private var semuaPromo: List<PromoItem> = emptyList()
+    private var promoListener: PromoListener? = null
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityPromoCustomerBinding.inflate(layoutInflater)
@@ -35,15 +41,60 @@ class PromoActivityCustomer : AppCompatActivity() {
             return
         }
 
+        promoAdapter = PetugasPromoAdapter { promo ->
+            startActivity(
+                Intent(this, PromoDetailActivity::class.java)
+                    .putExtra(PromoDetailActivity.EXTRA_PROMO_ID, promo.id)
+            )
+        }
+        siapkanDaftar()
         setupCategoryChips()
-        setupPromoClicks()
         setupBottomNav()
 
         listenPoints(uid)
         listenVouchers(uid)
     }
 
-    // ============ DATA ============
+    // Promo yang ditambah / dihapus petugas langsung ikut
+    override fun onStart() {
+        super.onStart()
+        promoListener = PromoStore.listen(
+            this,
+            onChange = { semuaPromo = it; render() },
+            onError = { toast("Gagal memuat promo") }
+        )
+    }
+
+    override fun onStop() {
+        super.onStop()
+        promoListener?.remove()
+        promoListener = null
+    }
+
+    // ============ DAFTAR PROMO ============
+
+    private fun siapkanDaftar() {
+        binding.rvPromo.adapter = promoAdapter
+    }
+
+
+    private fun render() {
+        val now = System.currentTimeMillis()
+        val aktif = semuaPromo.filter { it.mulai <= now && it.berakhir >= now }
+        val ada = aktif.isNotEmpty()
+
+        val tampil = if (ada) View.VISIBLE else View.GONE
+        binding.tvPromoHeader.visibility = tampil
+        binding.scrollKategori.visibility = tampil
+        binding.rvPromo.visibility = tampil
+
+        val list = aktif.filter { it.kategori == filter }
+        promoAdapter.submitList(list)
+        // teks kosong hanya untuk kategori yang kosong, saat promo lain masih ada
+        binding.tvKosong.visibility = if (ada && list.isEmpty()) View.VISIBLE else View.GONE
+    }
+
+    // ============ DATA POIN & VOUCHER ============
 
     /** Poin loyalti dari users/{uid}.points (realtime) */
     private fun listenPoints(uid: String) {
@@ -85,6 +136,12 @@ class PromoActivityCustomer : AppCompatActivity() {
             val checkedId = checkedIds.firstOrNull()
                 ?: return@setOnCheckedStateChangeListener
             chips.forEach { styleChip(it, it.id == checkedId) }
+            filter = when (checkedId) {
+                R.id.chipSparepart -> KategoriPromo.SPAREPART
+                R.id.chipPoin -> KategoriPromo.POIN
+                else -> KategoriPromo.SERVIS
+            }
+            render()
         }
     }
 
@@ -93,29 +150,6 @@ class PromoActivityCustomer : AppCompatActivity() {
         chip.chipBackgroundColor =
             ColorStateList.valueOf(if (selected) primary else Color.WHITE)
         chip.setTextColor(if (selected) Color.WHITE else primary)
-    }
-
-    // ============ CLICK ============
-
-    private fun setupPromoClicks() {
-        val cards = listOf(
-            binding.cardPromo1, binding.cardPromo2,
-            binding.cardPromo3, binding.cardPromo4
-        )
-        val buttons = listOf(
-            binding.btnLihatDetail1, binding.btnLihatDetail2,
-            binding.btnLihatDetail3, binding.btnLihatDetail4
-        )
-        for (i in cards.indices) {
-            val openDetail = {
-                startActivity(
-                    Intent(this, PromoDetailActivity::class.java)
-                        .putExtra(PromoDetailActivity.EXTRA_PROMO_INDEX, i)
-                )
-            }
-            cards[i].setOnClickListener { openDetail() }
-            buttons[i].setOnClickListener { openDetail() }
-        }
     }
 
     // ============ BOTTOM NAV ============

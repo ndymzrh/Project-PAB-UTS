@@ -14,87 +14,39 @@ import com.google.android.material.button.MaterialButton
 
 class PromoDetailActivity : AppCompatActivity() {
 
-    private data class Promo(
-        val title: String,
-        val validUntil: String,
-        val kategori: String,
-        val code: String,
-        val image: Int,
-        val terms: List<String>
-    )
-
-    // Urutan sama dengan kartu di halaman daftar (Promo 1..4).
-    // Syarat promo 2-4 hanya contoh, silakan diganti.
-    private val promos = listOf(
-        Promo(
-            "Diskon 25% Servis Berkala", "s/d 31 Des 2026", "Servis berkala",
-            "SERVISHEMAT25", R.drawable.bg_promo1,
-            listOf(
-                "Berlaku untuk kendaraan jenis mobil penumpang.",
-                "Minimal transaksi servis Rp 200.000.",
-                "Tidak dapat digabung dengan promo lain.",
-                "Berlaku di seluruh cabang Annova."
-            )
-        ),
-        Promo(
-            "Voucher Servis Poin Loyalitas", "s/d 31 Des 2026", "Poin loyalitas",
-            "POINSERVIS50", R.drawable.bg_promo2,
-            listOf(
-                "Voucher senilai Rp 50.000 untuk transaksi servis.",
-                "Ditukar dengan poin loyalitas yang tersedia.",
-                "Tidak dapat diuangkan.",
-                "Berlaku di seluruh cabang Annova."
-            )
-        ),
-        Promo(
-            "Paket Kampas Rem & Tune-up", "s/d 28 Feb 2027", "Sparepart",
-            "REMTUNE10", R.drawable.bg_promo3,
-            listOf(
-                "Diskon 10% untuk paket kampas rem dan tune-up.",
-                "Berlaku untuk kendaraan jenis mobil penumpang.",
-                "Tidak dapat digabung dengan promo lain.",
-                "Berlaku di seluruh cabang Annova."
-            )
-        ),
-        Promo(
-            "Gratis Cek AC Mobil", "s/d 15 Jan 2027", "Servis",
-            "CEKACGRATIS", R.drawable.bg_promo4,
-            listOf(
-                "Pengecekan AC gratis tanpa minimal transaksi.",
-                "Satu kali pemakaian per kendaraan.",
-                "Tidak termasuk biaya perbaikan atau penggantian part.",
-                "Berlaku di seluruh cabang Annova."
-            )
-        )
-    )
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_promo_detail)
 
-        val promo = promos.getOrNull(intent.getIntExtra(EXTRA_PROMO_INDEX, -1))
-        if (promo == null) {
-            toast("Promo tidak ditemukan")
-            finish()
-            return
-        }
+        setupBottomNav()
 
-        findViewById<ImageView>(R.id.imgBanner).setImageResource(promo.image)
-        findViewById<TextView>(R.id.tvPromoJudul).text = promo.title
+        // Data dari PromoStore, sama dengan yang diisi petugas
+        PromoStore.get(this, intent.getStringExtra(EXTRA_PROMO_ID).orEmpty()) { promo ->
+            if (promo == null) {
+                toast("Promo tidak ditemukan")
+                finish()
+            } else {
+                tampilkan(promo)
+            }
+        }
+    }
+
+    private fun tampilkan(promo: PromoItem) {
+        findViewById<ImageView>(R.id.imgBanner).setImageResource(drawableId(promo.gambar))
+        findViewById<TextView>(R.id.tvPromoJudul).text = promo.judul
         findViewById<TextView>(R.id.tvPromoMeta).text =
-            "Berlaku ${promo.validUntil} · ${promo.kategori}"
-        findViewById<TextView>(R.id.tvKodePromo).text = promo.code
-        findViewById<TextView>(R.id.tvSyarat).text = promo.terms
+            "Berlaku s/d ${promo.berakhir.toTanggal()} · ${promo.kategori.label}"
+        findViewById<TextView>(R.id.tvKodePromo).text = promo.kode
+        findViewById<TextView>(R.id.tvSyarat).text = promo.syarat.lines()
+            .filter { it.isNotBlank() }
             .mapIndexed { i, t -> "${i + 1}. $t" }
             .joinToString("\n")
 
         findViewById<MaterialButton>(R.id.btnSalin).setOnClickListener {
             val cm = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-            cm.setPrimaryClip(ClipData.newPlainText("Kode promo", promo.code))
-            toast("Kode ${promo.code} disalin")
+            cm.setPrimaryClip(ClipData.newPlainText("Kode promo", promo.kode))
+            toast("Kode ${promo.kode} disalin")
         }
-
-        setupBottomNav()
     }
 
     private fun setupBottomNav() {
@@ -127,6 +79,6 @@ class PromoDetailActivity : AppCompatActivity() {
         Toast.makeText(this, msg, Toast.LENGTH_SHORT).show()
 
     companion object {
-        const val EXTRA_PROMO_INDEX = "promoIndex"
+        const val EXTRA_PROMO_ID = "promoId"
     }
 }

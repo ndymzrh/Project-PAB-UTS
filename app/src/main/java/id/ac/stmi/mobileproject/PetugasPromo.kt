@@ -22,6 +22,7 @@ import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.widget.NestedScrollView
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.ListAdapter
@@ -41,6 +42,7 @@ import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 import java.util.UUID
+import android.content.SharedPreferences
 import org.json.JSONArray
 import org.json.JSONObject
 
@@ -68,23 +70,6 @@ data class PromoItem(
             jenisDiskon == "Persen" -> "$nilai%"
             else -> "Rp " + "%,d".format(nilai).replace(',', '.')
         }
-
-    fun toJson() = JSONObject().apply {
-        put("id", id); put("judul", judul); put("kategori", kategori.name)
-        put("kode", kode); put("jenis", jenisDiskon); put("nilai", nilai)
-        put("mulai", mulai); put("berakhir", berakhir); put("berlaku", berlaku)
-        put("syarat", syarat); put("gambar", gambar)
-    }
-
-    companion object {
-        fun fromJson(o: JSONObject) = PromoItem(
-            o.getString("id"), o.getString("judul"),
-            KategoriPromo.valueOf(o.getString("kategori")), o.getString("kode"),
-            o.getString("jenis"), o.getLong("nilai"), o.getLong("mulai"), o.getLong("berakhir"),
-            o.getString("berlaku"), o.getString("syarat"),
-            o.getString("gambar")
-        )
-    }
 }
 
 fun Long.toTanggal(): String =
@@ -96,64 +81,108 @@ fun gambarDefault(k: KategoriPromo) = when (k) {
     KategoriPromo.SPAREPART -> "bg_promo3"
 }
 
+/** Penanda listener agar pemanggil cukup memanggil .remove() di onStop. */
+class PromoListener(private val stop: () -> Unit) {
+    fun remove() = stop()
+}
+
 /**
- * "Database" promo: tersimpan di SharedPreferences (JSON), jadi tetap ada
- * setelah aplikasi ditutup. Awalnya terisi 4 promo yang sama dengan sisi customer.
- * Untuk Firebase / Room / API: ganti isi fungsi di object ini, pemanggil tidak berubah.
+ * Promo disimpan lokal di SharedPreferences (JSON). Petugas menulis, customer membaca
+ * di HP yang sama; listener ikut berubah saat data berubah.
+ * CATATAN: tidak tersinkron antar HP. Untuk itu pindahkan isi object ini ke Firestore
+ * (versi Firestore ada di file *.firestore.bak); pemanggilnya tidak perlu diubah.
  */
 object PromoStore {
     private const val PREF = "promo_store"
     private const val KEY = "promos"
+    private const val KEY_SEED = "seeded"
 
-    fun list(ctx: Context): List<PromoItem> {
-        val pref = ctx.applicationContext.getSharedPreferences(PREF, Context.MODE_PRIVATE)
-        val raw = pref.getString(KEY, null)
-        if (raw == null) {
-            val awal = seed()
-            simpan(ctx, awal)
-            return awal
-        }
-        val arr = JSONArray(raw)
-        return (0 until arr.length()).map { PromoItem.fromJson(arr.getJSONObject(it)) }
+    enum class Hasil { SUKSES, KODE_ADA, GAGAL }
+
+    private fun prefs(ctx: Context) =
+        ctx.applicationContext.getSharedPreferences(PREF, Context.MODE_PRIVATE)
+
+    private fun PromoItem.toJson() = JSONObject().apply {
+        put("id", id); put("judul", judul); put("kategori", kategori.name)
+        put("kode", kode); put("jenis", jenisDiskon); put("nilai", nilai)
+        put("mulai", mulai); put("berakhir", berakhir); put("berlaku", berlaku)
+        put("syarat", syarat); put("gambar", gambar)
     }
 
-    fun get(ctx: Context, id: String) = list(ctx).firstOrNull { it.id == id }
+    private fun JSONObject.toPromo() = PromoItem(
+        getString("id"), getString("judul"),
+        KategoriPromo.valueOf(getString("kategori")), getString("kode"),
+        getString("jenis"), getLong("nilai"), getLong("mulai"), getLong("berakhir"),
+        optString("berlaku"), optString("syarat"), optString("gambar", "bg_promo1")
+    )
 
-    fun kodeSudahAda(ctx: Context, kode: String) =
-        list(ctx).any { it.kode.equals(kode, ignoreCase = true) }
-
-    fun tambah(ctx: Context, p: PromoItem) =
-        simpan(ctx, listOf(p.copy(id = UUID.randomUUID().toString())) + list(ctx))
-
-    fun hapus(ctx: Context, id: String) =
-        simpan(ctx, list(ctx).filterNot { it.id == id })
+    private fun baca(ctx: Context): List<PromoItem> = try {
+        val raw = prefs(ctx).getString(KEY, null)
+        if (raw == null) emptyList()
+        else JSONArray(raw).let { a -> (0 until a.length()).map { a.getJSONObject(it).toPromo() } }
+    } catch (e: Exception) { emptyList() }
 
     private fun simpan(ctx: Context, data: List<PromoItem>) {
         val arr = JSONArray().also { a -> data.forEach { a.put(it.toJson()) } }
-        ctx.applicationContext.getSharedPreferences(PREF, Context.MODE_PRIVATE)
-            .edit().putString(KEY, arr.toString()).apply()
+        prefs(ctx).edit().putString(KEY, arr.toString()).apply()
+    }
+
+    /** Panggil di onStart, lalu .remove() di onStop. Langsung mengirim data saat ini. */
+    fun listen(ctx: Context, onChange: (List<PromoItem>) -> Unit, onError: () -> Unit = {}): PromoListener {
+        val p = prefs(ctx)
+        val l = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+            if (key == KEY) onChange(baca(ctx).sortedByDescending { it.mulai })
+        }
+        p.registerOnSharedPreferenceChangeListener(l)
+        onChange(baca(ctx).sortedByDescending { it.mulai })
+        return PromoListener { p.unregisterOnSharedPreferenceChangeListener(l) }
+    }
+
+    fun get(ctx: Context, id: String, onResult: (PromoItem?) -> Unit) =
+        onResult(baca(ctx).firstOrNull { it.id == id })
+
+    fun tambah(ctx: Context, p: PromoItem, onDone: (Hasil) -> Unit) {
+        val data = baca(ctx)
+        if (data.any { it.kode.equals(p.kode, ignoreCase = true) }) { onDone(Hasil.KODE_ADA); return }
+        simpan(ctx, listOf(p) + data)
+        onDone(Hasil.SUKSES)
+    }
+
+    fun hapus(ctx: Context, id: String, onDone: (Boolean) -> Unit) {
+        simpan(ctx, baca(ctx).filterNot { it.id == id })
+        onDone(true)
+    }
+
+    /** Isi 4 promo contoh SEKALI SAJA (ditandai flag). Dipanggil dari sisi petugas. */
+    fun seedSekali(ctx: Context) {
+        val p = prefs(ctx)
+        if (p.getBoolean(KEY_SEED, false)) return
+        val ada = baca(ctx)
+        val baru = dataAwal().filter { s -> ada.none { it.kode.equals(s.kode, ignoreCase = true) } }
+        simpan(ctx, baru + ada)
+        p.edit().putBoolean(KEY_SEED, true).apply()
     }
 
     private fun tgl(y: Int, m: Int, d: Int) =
         Calendar.getInstance().apply { clear(); set(y, m, d, 23, 59) }.timeInMillis
 
-    private fun seed(): List<PromoItem> {
+    private fun dataAwal(): List<PromoItem> {
         val mulai = tgl(2026, Calendar.OCTOBER, 1)
         val syarat = "Berlaku di seluruh cabang Annova."
         return listOf(
-            PromoItem("1", "Diskon 25% Servis Berkala", KategoriPromo.SERVIS, "SERVISHEMAT25",
+            PromoItem("SERVISHEMAT25", "Diskon 25% Servis Berkala", KategoriPromo.SERVIS, "SERVISHEMAT25",
                 "Persen", 25, mulai, tgl(2026, Calendar.DECEMBER, 31), "Servis berkala",
                 "Berlaku untuk kendaraan jenis mobil penumpang.\nMinimal transaksi servis Rp 200.000.\nTidak dapat digabung dengan promo lain.\n$syarat",
                 gambar = "bg_promo1"),
-            PromoItem("2", "Voucher Servis Poin Loyalitas", KategoriPromo.POIN, "POINSERVIS50",
+            PromoItem("POINSERVIS50", "Voucher Servis Poin Loyalitas", KategoriPromo.POIN, "POINSERVIS50",
                 "Nominal", 50000, mulai, tgl(2026, Calendar.DECEMBER, 31), "Poin loyalitas",
                 "Voucher senilai Rp 50.000 untuk transaksi servis.\nDitukar dengan poin loyalitas yang tersedia.\nTidak dapat diuangkan.\n$syarat",
                 gambar = "bg_promo2"),
-            PromoItem("3", "Paket Kampas Rem & Tune-up", KategoriPromo.SPAREPART, "REMTUNE10",
+            PromoItem("REMTUNE10", "Paket Kampas Rem & Tune-up", KategoriPromo.SPAREPART, "REMTUNE10",
                 "Persen", 10, mulai, tgl(2027, Calendar.FEBRUARY, 28), "Kampas rem, tune-up",
                 "Diskon 10% untuk paket kampas rem dan tune-up.\nBerlaku untuk kendaraan jenis mobil penumpang.\nTidak dapat digabung dengan promo lain.\n$syarat",
                 gambar = "bg_promo3"),
-            PromoItem("4", "Gratis Cek AC Mobil", KategoriPromo.SERVIS, "CEKACGRATIS",
+            PromoItem("CEKACGRATIS", "Gratis Cek AC Mobil", KategoriPromo.SERVIS, "CEKACGRATIS",
                 "Persen", 100, mulai, tgl(2027, Calendar.JANUARY, 15), "Cek AC",
                 "Pengecekan AC gratis tanpa minimal transaksi.\nSatu kali pemakaian per kendaraan.\nTidak termasuk biaya perbaikan atau penggantian part.\n$syarat",
                 gambar = "bg_promo4")
@@ -265,6 +294,8 @@ class PetugasPromoActivity : AppCompatActivity() {
     private lateinit var adapter: PetugasPromoAdapter
     private lateinit var rvPromo: RecyclerView
     private lateinit var tvKosong: TextView
+    private var semuaPromo: List<PromoItem> = emptyList()
+    private var promoListener: PromoListener? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -277,6 +308,7 @@ class PetugasPromoActivity : AppCompatActivity() {
             )
         }
         siapkanDaftar()
+        PromoStore.seedSekali(this) // isi 4 promo contoh, hanya sekali
 
         val chipGroup = findViewById<ChipGroup>(R.id.chipGroupKategori)
         chipGroup.setOnCheckedStateChangeListener { group, ids ->
@@ -290,46 +322,33 @@ class PetugasPromoActivity : AppCompatActivity() {
             render()
         }
         warnaiChip(chipGroup)
-        findViewById<ExtendedFloatingActionButton>(R.id.fabTambah).setOnClickListener {
+        findViewById<MaterialButton>(R.id.fabTambah).setOnClickListener {
             startActivity(Intent(this, PetugasPromoTambahActivity::class.java))
         }
 
         setupBottomNav()
     }
 
-    // Muat ulang tiap kembali ke layar ini (setelah tambah / hapus promo)
-    override fun onResume() {
-        super.onResume()
-        render()
+    // Otomatis ikut saat promo ditambah / dihapus
+    override fun onStart() {
+        super.onStart()
+        promoListener = PromoStore.listen(
+            this,
+            onChange = { semuaPromo = it; render() },
+            onError = { toast("Gagal memuat promo") }
+        )
     }
 
-    /**
-     * Layout hanya punya 4 kartu statis. Di sini keempatnya diganti dengan daftar
-     * dinamis (RecyclerView buatan kode) supaya semua promo di database tampil,
-     * termasuk yang ditambah Petugas. Tidak ada perubahan di XML.
-     */
-    private fun siapkanDaftar() {
-        val wadah = findViewById<View>(R.id.cardPromo1).parent.parent as LinearLayout
-        wadah.removeAllViews()
-        val dp = resources.displayMetrics.density
+    override fun onStop() {
+        super.onStop()
+        promoListener?.remove()
+        promoListener = null
+    }
 
-        rvPromo = RecyclerView(this).apply {
-            layoutManager = GridLayoutManager(this@PetugasPromoActivity, 2)
-            this.adapter = this@PetugasPromoActivity.adapter
-            isNestedScrollingEnabled = false
-            clipToPadding = false
-            setPadding((10 * dp).toInt(), 0, (10 * dp).toInt(), 0)
-        }
-        tvKosong = TextView(this).apply {
-            text = "Belum ada promo aktif di kategori ini"
-            gravity = Gravity.CENTER
-            setTextColor(ContextCompat.getColor(context, R.color.bk_text_secondary))
-            setTextSize(TypedValue.COMPLEX_UNIT_SP, 14f)
-            setPadding(0, (40 * dp).toInt(), 0, 0)
-            visibility = View.GONE
-        }
-        wadah.addView(rvPromo, LinearLayout.LayoutParams(-1, -2))
-        wadah.addView(tvKosong, LinearLayout.LayoutParams(-1, -2))
+    private fun siapkanDaftar() {
+        rvPromo = findViewById(R.id.rvPromo)
+        rvPromo.adapter = adapter
+        tvKosong = findViewById(R.id.tvKosong)
     }
 
     // Chip terpilih = biru tua, lainnya putih (warna di XML bersifat tetap)
@@ -344,7 +363,7 @@ class PetugasPromoActivity : AppCompatActivity() {
 
     private fun render() {
         val now = System.currentTimeMillis()
-        val aktif = PromoStore.list(this).filter { it.berakhir >= now }
+        val aktif = semuaPromo.filter { it.berakhir >= now }
         val list = filter?.let { f -> aktif.filter { it.kategori == f } } ?: aktif
         adapter.submitList(list)
         tvKosong.visibility = if (list.isEmpty()) View.VISIBLE else View.GONE
@@ -373,7 +392,7 @@ class PetugasPromoActivity : AppCompatActivity() {
             }
         }
         // Tap Promo lagi = kembali ke atas daftar
-        bottomNav.setOnItemReselectedListener { rvPromo.smoothScrollToPosition(0) }
+        bottomNav.setOnItemReselectedListener { findViewById<NestedScrollView>(R.id.scrollPromo).smoothScrollTo(0, 0) }
     }
 
     private fun toast(msg: String) = Toast.makeText(this, msg, Toast.LENGTH_SHORT).show()
@@ -384,14 +403,19 @@ class PetugasPromoDetailActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_detail_promo_petugas)
         findViewById<MaterialToolbar>(R.id.toolbar).setNavigationOnClickListener { finish() }
+        setupBottomNav()
 
-        val promo = PromoStore.get(this, intent.getStringExtra(EXTRA_PROMO_ID).orEmpty())
-        if (promo == null) {
-            toast("Promo tidak ditemukan")
-            finish()
-            return
+        PromoStore.get(this, intent.getStringExtra(EXTRA_PROMO_ID).orEmpty()) { promo ->
+            if (promo == null) {
+                toast("Promo tidak ditemukan")
+                finish()
+            } else {
+                tampilkan(promo)
+            }
         }
+    }
 
+    private fun tampilkan(promo: PromoItem) {
         findViewById<ImageView>(R.id.imgBanner).setImageResource(drawableId(promo.gambar))
         findViewById<TextView>(R.id.tvPromoJudul).text = promo.judul
         findViewById<TextView>(R.id.tvPromoMeta).text =
@@ -408,14 +432,13 @@ class PetugasPromoDetailActivity : AppCompatActivity() {
                 .setMessage("\"${promo.judul}\" akan dihapus dari daftar dan tidak tampil lagi untuk customer. Tindakan ini tidak dapat dibatalkan.")
                 .setNegativeButton("Batal", null)
                 .setPositiveButton("Hapus") { _, _ ->
-                    PromoStore.hapus(this, promo.id)
-                    toast("Promo dihapus")
-                    finish()
+                    PromoStore.hapus(this, promo.id) { ok ->
+                        toast(if (ok) "Promo dihapus" else "Gagal menghapus promo")
+                        if (ok) finish()
+                    }
                 }
                 .show()
         }
-
-        setupBottomNav()
     }
 
     private fun setupBottomNav() {
@@ -502,7 +525,7 @@ class PetugasPromoTambahActivity : AppCompatActivity() {
         if (judul.isEmpty()) salah(R.id.tilJudul, "Judul wajib diisi")
         if (kategori == null) salah(R.id.tilKategori, "Pilih kategori")
         if (kode.isEmpty()) salah(R.id.tilKode, "Kode wajib diisi")
-        else if (PromoStore.kodeSudahAda(this, kode)) salah(R.id.tilKode, "Kode sudah dipakai")
+        else if (kode.contains('/')) salah(R.id.tilKode, "Kode tidak boleh memuat '/'")
         if (jenis.isEmpty()) salah(R.id.tilJenis, "Pilih jenis diskon")
         if (nilai == null || nilai <= 0) salah(R.id.tilNilai, "Isi nilai diskon")
         else if (jenis == "Persen" && nilai > 100) salah(R.id.tilNilai, "Maksimal 100%")
@@ -513,12 +536,23 @@ class PetugasPromoTambahActivity : AppCompatActivity() {
         if (syarat.isEmpty()) salah(R.id.tilSyarat, "Wajib diisi")
         if (!ok) return
 
+        val btn = findViewById<MaterialButton>(R.id.btnSimpan)
+        btn.isEnabled = false
         PromoStore.tambah(
             this,
-            PromoItem("", judul, kategori!!, kode, jenis, nilai!!, mulai!!, berakhir!!, berlaku, syarat,
+            PromoItem(kode, judul, kategori!!, kode, jenis, nilai!!, mulai!!, berakhir!!, berlaku, syarat,
                 gambarDefault(kategori))
-        )
-        Toast.makeText(this, "Promo disimpan", Toast.LENGTH_SHORT).show()
-        finish()
+        ) { hasil ->
+            btn.isEnabled = true
+            when (hasil) {
+                PromoStore.Hasil.SUKSES -> {
+                    Toast.makeText(this, "Promo disimpan", Toast.LENGTH_SHORT).show()
+                    finish()
+                }
+                PromoStore.Hasil.KODE_ADA -> til(R.id.tilKode).error = "Kode sudah dipakai"
+                PromoStore.Hasil.GAGAL ->
+                    Toast.makeText(this, "Gagal menyimpan, periksa koneksi", Toast.LENGTH_SHORT).show()
+            }
+        }
     }
 }

@@ -57,6 +57,14 @@
             android:exported="false"
             android:windowSoftInputMode="adjustResize" />
         <activity
+            android:name=".PetugasPromoTambahActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
+        <activity
+            android:name=".PetugasPromoDetailActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
+        <activity
             android:name=".PromoDetailActivity"
             android:exported="false"
             android:windowSoftInputMode="adjustResize" />
