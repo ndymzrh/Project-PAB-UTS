@@ -24,4 +24,72 @@
     <string name="nav_booking">Booking</string>
     <string name="nav_bengkel">Bengkel</string>
     <string name="nav_akun">Akun</string>
+
+    <!-- ===== Umum ===== -->
+    <string name="petugas">Petugas</string>
+    <string name="batal">Batal</string>
+    <string name="hapus">Hapus</string>
+    <string name="simpan">Simpan</string>
+    <string name="salin">Salin</string>
+
+    <!-- ===== Promo & Voucher: daftar ===== -->
+    <string name="promo_voucher">Promo &amp; Voucher</string>
+    <string name="breadcrumb_beranda_promo">Beranda › Promo</string>
+    <string name="promo_untuk_anda">Promo untuk Anda</string>
+    <string name="belum_ada_promo">Belum ada promo</string>
+    <string name="lihat_detail">Lihat Detail</string>
+    <string name="tambah_promo">Tambah Promo</string>
+
+    <!-- Filter kategori -->
+    <string name="semua">Semua</string>
+    <string name="servis">Servis</string>
+    <string name="sparepart">Sparepart</string>
+    <string name="kategori_poin">Poin</string>
+
+    <!-- ===== Poin loyalti & voucher (Customer) ===== -->
+    <string name="poin_loyalti_saya">Poin Loyalti saya</string>
+    <string name="lihat_riwayat_poin">Lihat riwayat poin</string>
+    <string name="voucher_saya">Voucher saya</string>
+    <string name="tersedia">tersedia</string>
+    <string name="lihat_voucher">Lihat voucher</string>
+    <string name="reward_berikutnya">Reward berikutnya</string>
+    <string name="reward_hint">Kumpulkan poin dari setiap servis untuk ditukar voucher.</string>
+    <string name="riwayat_poin">Riwayat Poin</string>
+    <string name="belum_ada_riwayat_poin">Belum ada riwayat poin</string>
+
+    <!-- ===== Detail promo ===== -->
+    <string name="detail_promo">Detail Promo</string>
+    <string name="kode_promo">Kode promo</string>
+    <string name="salin_kode">Salin kode</string>
+    <string name="kode_disalin">Kode promo disalin</string>
+    <string name="syarat_ketentuan">Syarat &amp; Ketentuan</string>
+    <string name="berlaku_sampai">Berlaku s/d %1$s</string>
+    <string name="promo_meta_format">Berlaku s/d %1$s · %2$s</string>
+
+    <!-- ===== Form tambah promo (Petugas) ===== -->
+    <string name="judul_promo">Judul promo</string>
+    <string name="hint_judul_promo">Contoh: Diskon 20% Servis AC</string>
+    <string name="hint_kode_promo">Contoh: ACSEGAR20</string>
+    <string name="jenis_diskon">Jenis diskon</string>
+    <string name="persen">Persen</string>
+    <string name="nominal">Nominal</string>
+    <string name="nilai">Nilai</string>
+    <string name="mulai">Mulai</string>
+    <string name="berakhir">Berakhir</string>
+    <string name="layanan_berlaku">Layanan berlaku</string>
+    <string name="hint_layanan_berlaku">Servis berkala, Servis AC</string>
+    <string name="hint_syarat">Tulis syarat promo...</string>
+    <string name="simpan_promo">Simpan Promo</string>
+
+    <!-- Validasi & pesan -->
+    <string name="error_wajib_diisi">Wajib diisi</string>
+    <string name="error_tanggal_tidak_valid">Tanggal berakhir harus setelah tanggal mulai</string>
+    <string name="promo_tersimpan">Promo berhasil disimpan</string>
+    <string name="promo_dihapus">Promo berhasil dihapus</string>
+
+    <!-- ===== Hapus promo ===== -->
+    <string name="hapus_promo">Hapus Promo</string>
+    <string name="hapus_promo_ini">Hapus promo ini?</string>
+    <string name="pesan_hapus_promo">\"%1$s\" akan dihapus dari daftar dan tidak tampil lagi untuk customer. Tindakan ini tidak dapat dibatalkan.</string>
+
 </resources>

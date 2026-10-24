@@ -25,12 +25,10 @@ class WelcomeActivity : AppCompatActivity() {
             insets
         }
 
-        // Tombol "Daftar Akun" -> halaman register
         findViewById<Button>(R.id.button).setOnClickListener {
             startActivity(Intent(this, RegisterActivity::class.java))
         }
 
-        // Tombol "Masuk" -> halaman login
         findViewById<Button>(R.id.button2).setOnClickListener {
             startActivity(Intent(this, LoginActivity::class.java))
         }

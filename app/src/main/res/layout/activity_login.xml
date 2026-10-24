@@ -47,14 +47,14 @@
 
         <TextView
             android:id="@+id/tvSubtitle"
-            android:layout_width="309dp"
+            android:layout_width="312dp"
             android:layout_height="wrap_content"
             android:layout_marginTop="4dp"
             android:fontFamily="@font/poppins_medium"
             android:text="Masuk untuk mengelola perawatan kendaraan dan riwayat operasional bengkel Anda"
             android:textAlignment="center"
-            android:textColor="#607D8B"
-            android:textSize="14sp" />
+            android:textColor="#475569"
+            android:textSize="13sp" />
 
         <!-- Card Form Login -->
         <androidx.cardview.widget.CardView
