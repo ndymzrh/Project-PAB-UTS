@@ -30,7 +30,7 @@ class HomeActivityPetugas : AppCompatActivity() {
         if (uid == null) {
             startActivity(
                 Intent(this, LoginActivity::class.java)
-                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK))
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK))
             finish()
             return
         }
@@ -60,7 +60,17 @@ class HomeActivityPetugas : AppCompatActivity() {
         binding.bottomNav.setOnItemSelectedListener { item ->
             when (item.itemId) {
                 R.id.nav_home -> true
-                R.id.nav_promo -> {toast("Promo"); false}
+                R.id.nav_promo -> {
+                    startActivity(
+                        Intent(this, PetugasPromoActivity::class.java)
+                            .addFlags(
+                                Intent.FLAG_ACTIVITY_CLEAR_TOP or
+                                        Intent.FLAG_ACTIVITY_SINGLE_TOP
+                            )
+                    )
+                    overridePendingTransition(0, 0)
+                    false
+                }
                 R.id.nav_booking -> { toast("Booking"); false }
                 R.id.nav_servis -> { toast("Servis"); false }
                 R.id.nav_account -> { toast("Akun"); false }

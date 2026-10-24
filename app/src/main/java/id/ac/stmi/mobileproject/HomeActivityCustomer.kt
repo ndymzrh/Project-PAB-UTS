@@ -6,6 +6,7 @@ import android.view.View
 import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat.startActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
@@ -168,7 +169,17 @@ class HomeActivityCustomer : AppCompatActivity() {
         binding.bottomNav.setOnItemSelectedListener { item ->
             when (item.itemId) {
                 R.id.nav_home -> true
-                R.id.nav_promo -> { toast("Promo"); true }
+                R.id.nav_promo -> {
+                    startActivity(
+                        Intent(this, PromoActivityCustomer::class.java)
+                            .addFlags(
+                                Intent.FLAG_ACTIVITY_CLEAR_TOP or
+                                        Intent.FLAG_ACTIVITY_SINGLE_TOP
+                            )
+                    )
+                overridePendingTransition(0, 0)
+                    false
+            }
                 R.id.nav_bengkel -> { toast("Peta bengkel"); true }
                 R.id.nav_account -> {
                     startActivity(Intent(this, AccountActivity::class.java))
