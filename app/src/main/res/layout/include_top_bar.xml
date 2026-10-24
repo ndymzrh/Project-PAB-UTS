@@ -1,11 +1,10 @@
-<?xml version="1.0" encoding="utf-8"?>
 <com.google.android.material.appbar.AppBarLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/appBar"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:background="@android:color/white"
-    android:id="@+id/appBar"
     app:elevation="0dp">
 
     <com.google.android.material.appbar.MaterialToolbar
@@ -13,9 +12,32 @@
         android:layout_width="match_parent"
         android:layout_height="?attr/actionBarSize"
         android:background="@android:color/white"
-        app:logo="@drawable/ic_logo_bar"
-        app:menu="@menu/menu_top_bar"
-        app:title="Annova AutoCare"
-        app:titleMarginStart="8dp"
-        app:titleTextColor="@color/bk_primary" />
+        android:contentInsetStart="0dp"
+        app:contentInsetStart="0dp"
+        app:menu="@menu/menu_top_bar">
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingStart="12dp">
+
+            <ImageView
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:contentDescription="Logo Annova AutoCare"
+                android:scaleType="fitCenter"
+                android:src="@drawable/annova_auto_care" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:text="Annova AutoCare"
+                android:textColor="@color/bk_primary"
+                android:textSize="18sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+    </com.google.android.material.appbar.MaterialToolbar>
 </com.google.android.material.appbar.AppBarLayout>

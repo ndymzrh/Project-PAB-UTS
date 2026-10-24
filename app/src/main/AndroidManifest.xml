@@ -12,14 +12,20 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.MobileProject">
         <activity
-            android:name=".WelcomeActivity"
+            android:name=".SplashActivity"
             android:exported="true"
-            android:windowSoftInputMode="adjustResize">
+            android:windowSoftInputMode="adjustResize"
+            android:theme="@style/Theme.Splash">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+        </activity>
+        <activity
+            android:name=".WelcomeActivity"
+            android:exported="true"
+            android:windowSoftInputMode="adjustResize">
         </activity>
         <activity
             android:name=".LoginActivity"

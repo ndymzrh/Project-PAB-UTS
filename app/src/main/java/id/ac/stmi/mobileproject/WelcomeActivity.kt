@@ -1,6 +1,7 @@
 package id.ac.stmi.mobileproject
 
 import android.content.ActivityNotFoundException
+import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
@@ -37,6 +38,9 @@ class WelcomeActivity : AppCompatActivity() {
         findViewById<TextView>(R.id.textView17).setOnClickListener {
             bukaWhatsApp()
         }
+
+        getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
+            .edit().putBoolean("welcome_seen", true).apply()
     }
 
     private fun bukaWhatsApp() {

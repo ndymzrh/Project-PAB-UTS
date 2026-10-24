@@ -5,4 +5,9 @@
     </style>
 
     <style name="Theme.MobileProject" parent="Base.Theme.MobileProject" />
+
+    <style name="Theme.Splash" parent="Theme.MobileProject">
+        <item name="android:windowBackground">@drawable/bg_splash</item>
+    </style>
+
 </resources>
