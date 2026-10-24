@@ -46,7 +46,16 @@ class HomeActivityCustomer : AppCompatActivity() {
 
 
         setContentView(binding.root)
-        val notifBadge = setupTopBar(showNotificationDot = true)
+        val notifBadge = setupTopBar(
+            showNotificationDot = true,
+            onLogout = {
+                userReg?.remove()
+                vehiclesReg?.remove()
+                userReg = null
+                vehiclesReg = null
+                confirmLogout()
+            }
+        )
         showActiveBooking(null, null, null)
 
         val uid = auth.currentUser?.uid
