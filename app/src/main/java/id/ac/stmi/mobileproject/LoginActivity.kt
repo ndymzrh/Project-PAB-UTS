@@ -1,9 +1,12 @@
 package id.ac.stmi.mobileproject
 
+import android.content.Intent
 import android.os.Bundle
 import android.view.View
+import android.widget.Button
 import android.widget.LinearLayout
 import android.widget.RadioGroup
+import android.widget.TextView
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
@@ -36,5 +39,11 @@ class LoginActivity : AppCompatActivity() {
                 layoutDaftar.visibility = View.VISIBLE
             }
         }
+
+        // Tombol "Daftar Akun" -> halaman register
+        findViewById<TextView>(R.id.tvDaftar).setOnClickListener {
+            startActivity(Intent(this, RegisterActivity::class.java))
+        }
+
     }
 }
