@@ -15,7 +15,6 @@ import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
 import java.text.NumberFormat
 import java.util.Locale
-import kotlin.jvm.java
 
 class HomeActivityCustomer : AppCompatActivity() {
 
@@ -33,9 +32,18 @@ class HomeActivityCustomer : AppCompatActivity() {
         enableEdgeToEdge()
         binding = ActivityHomeCustomerBinding.inflate(layoutInflater)
         setContentView(binding.root)
-        binding.fabBooking.bringToFront()
 
-        applySystemBarInsets(binding.main)
+        // Ikon status bar gelap karena latar top bar putih
+        WindowCompat.getInsetsController(window, window.decorView)
+            .isAppearanceLightStatusBars = true
+
+        // Padding atas = tinggi status bar, area itu ikut berwarna putih
+        ViewCompat.setOnApplyWindowInsetsListener(binding.main) { _, insets ->
+            val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+            binding.topBarContainer.root.setPadding(0, bars.top, 0, 0)
+            insets
+        }
+
 
         setContentView(binding.root)
         val notifBadge = setupTopBar(
@@ -48,7 +56,6 @@ class HomeActivityCustomer : AppCompatActivity() {
                 confirmLogout()
             }
         )
-
         showActiveBooking(null, null, null)
 
         val uid = auth.currentUser?.uid
@@ -161,10 +168,7 @@ class HomeActivityCustomer : AppCompatActivity() {
         binding.bottomNav.setOnItemSelectedListener { item ->
             when (item.itemId) {
                 R.id.nav_home -> true
-                R.id.nav_promo -> { startActivity(Intent(this, PromoActivityCustomer::class.java))
-                    false // false = tab Beranda tetap terpilih di halaman ini
-                }
-                R.id.nav_booking -> { toast("Buat booking baru"); false }
+                R.id.nav_promo -> { toast("Promo"); true }
                 R.id.nav_bengkel -> { toast("Peta bengkel"); true }
                 R.id.nav_account -> {
                     startActivity(Intent(this, AccountActivity::class.java))
