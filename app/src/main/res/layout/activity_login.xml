@@ -113,7 +113,7 @@
                         android:button="@null"
                         android:fontFamily="@font/poppins_medium"
                         android:gravity="center"
-                        android:text="Petugas"
+                        android:text="Staff"
                         android:textColor="@color/role_text_color"
                         android:textSize="14sp"
                         android:textStyle="bold" />

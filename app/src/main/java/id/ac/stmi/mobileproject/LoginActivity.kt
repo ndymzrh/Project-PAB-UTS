@@ -39,7 +39,11 @@ class LoginActivity : AppCompatActivity() {
     companion object {
         // Nilai field "role" di Firestore: users/{uid}.role
         private const val ROLE_PELANGGAN = "pengguna"   // sama dengan yang disimpan RegisterActivity
-        private const val ROLE_PETUGAS = "petugas"      // dibuat manual untuk akun mekanik/admin
+        private const val ROLE_PETUGAS = "petugas"
+        private const val ROLE_PEMILIK = "pemilik"
+        private const val PILIHAN_STAF = "staf"   // pilihan di layar, bukan role di Firestore
+
+        private val ROLE_STAF = setOf(ROLE_PETUGAS, ROLE_PEMILIK)
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -68,7 +72,7 @@ class LoginActivity : AppCompatActivity() {
         val tvDaftar = findViewById<TextView>(R.id.tvDaftar)
         val tvLupaPassword = findViewById<TextView>(R.id.tvLupaPassword)
 
-        // 2. Sembunyikan "Daftar" saat role Petugas dipilih
+        // 2. Sembunyikan "Daftar" saat pilihan Staf dipilih
         rgRole.setOnCheckedChangeListener { _, checkedId ->
             layoutDaftar.visibility =
                 if (checkedId == R.id.rbPetugas) View.GONE else View.VISIBLE
@@ -117,7 +121,7 @@ class LoginActivity : AppCompatActivity() {
         }
 
         val roleDipilih =
-            if (rgRole.checkedRadioButtonId == R.id.rbPetugas) ROLE_PETUGAS else ROLE_PELANGGAN
+            if (rgRole.checkedRadioButtonId == R.id.rbPetugas) PILIHAN_STAF else ROLE_PELANGGAN
 
         setLoading(true)
 
@@ -152,6 +156,10 @@ class LoginActivity : AppCompatActivity() {
             .addOnSuccessListener { doc ->
                 val role = doc.getString("role")?.trim()?.lowercase()
 
+                val cocok = roleDipilih == null ||
+                        (roleDipilih == ROLE_PELANGGAN && role == ROLE_PELANGGAN) ||
+                        (roleDipilih == PILIHAN_STAF && role in ROLE_STAF)
+
                 when {
                     !doc.exists() || role.isNullOrEmpty() -> {
                         auth.signOut()
@@ -159,10 +167,10 @@ class LoginActivity : AppCompatActivity() {
                         toast("Data akun tidak ditemukan. Hubungi admin.")
                     }
 
-                    roleDipilih != null && role != roleDipilih -> {
+                    !cocok -> {
                         auth.signOut()
                         setLoading(false)
-                        val seharusnya = if (role == ROLE_PETUGAS) "Petugas" else "Pelanggan"
+                        val seharusnya = if (role in ROLE_STAF) "Staf" else "Pelanggan"
                         toast("Akun ini terdaftar sebagai $seharusnya. Pilih role yang sesuai.")
                     }
 
@@ -177,27 +185,21 @@ class LoginActivity : AppCompatActivity() {
     }
 
     private fun bukaHalaman(role: String) {
-        when (role) {
-            ROLE_PELANGGAN -> {
-                startActivity(Intent(this, HomeActivityCustomer::class.java))
-                finishAffinity()
-            }
-
-            ROLE_PETUGAS -> {
-                // TODO: ganti dengan halaman petugas Anda, contoh:
-                // startActivity(Intent(this, HomeActivityPetugas::class.java))
-                // finishAffinity()
-                auth.signOut()
-                setLoading(false)
-                toast("Halaman petugas belum tersedia")
-            }
-
-            else -> {
-                auth.signOut()
-                setLoading(false)
-                toast("Role akun tidak dikenali")
-            }
+        val tujuan = when (role) {
+            ROLE_PELANGGAN -> HomeActivityCustomer::class.java
+            ROLE_PETUGAS, ROLE_PEMILIK -> HomeActivityPetugas::class.java
+            else -> null
         }
+
+        if (tujuan == null) {
+            auth.signOut()
+            setLoading(false)
+            toast("Role akun tidak dikenali")
+            return
+        }
+
+        startActivity(Intent(this, tujuan))
+        finishAffinity()
     }
 
     // ---------------------------------------------------------------
