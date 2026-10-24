@@ -3,6 +3,9 @@ package id.ac.stmi.mobileproject
 import android.app.Activity
 import android.graphics.Color
 import android.widget.Toast
+import android.content.Intent
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import com.google.firebase.auth.FirebaseAuth
 import com.google.android.material.appbar.MaterialToolbar
 import com.google.android.material.badge.BadgeDrawable
 import com.google.android.material.badge.BadgeUtils
@@ -12,7 +15,7 @@ fun Activity.setupTopBar(
     showNotificationDot: Boolean = false,
     onSupport: () -> Unit = { toastTopBar("Bantuan") },
     onNotification: () -> Unit = { toastTopBar("Notifikasi") },
-    onLogout: () -> Unit = { toastTopBar("Logout") }
+    onLogout: () -> Unit = { confirmLogout() }
 ): BadgeDrawable {
 
     val toolbar = findViewById<MaterialToolbar>(R.id.topBar)
@@ -40,3 +43,22 @@ fun Activity.setupTopBar(
 
 private fun Activity.toastTopBar(msg: String) =
     Toast.makeText(this, msg, Toast.LENGTH_SHORT).show()
+
+fun Activity.confirmLogout() {
+    MaterialAlertDialogBuilder(this)
+        .setTitle("Keluar")
+        .setMessage("Yakin ingin keluar dari akun?")
+        .setNegativeButton("Batal", null)
+        .setPositiveButton("Keluar") { _, _ -> performLogout() }
+        .show()
+}
+
+private fun Activity.performLogout() {
+    FirebaseAuth.getInstance().signOut()
+    val intent = Intent(this, LoginActivity::class.java).apply {
+        // Bersihkan back stack supaya tombol Back tidak kembali ke Home
+        flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+    }
+    startActivity(intent)
+    finish()
+}
