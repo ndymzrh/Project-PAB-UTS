@@ -4,13 +4,17 @@ import android.content.Intent
 import android.os.Bundle
 import android.view.View
 import android.widget.Toast
+import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
 import id.ac.stmi.mobileproject.databinding.ActivityHomeCustomerBinding
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.ListenerRegistration
 import java.text.NumberFormat
 import java.util.Locale
-import kotlin.jvm.java
 
 class HomeActivityCustomer : AppCompatActivity() {
 
@@ -19,11 +23,27 @@ class HomeActivityCustomer : AppCompatActivity() {
     private val db by lazy { FirebaseFirestore.getInstance() }
 
     private var currentVehicle: Vehicle? = null
+    private var userReg: ListenerRegistration? = null
+    private var vehiclesReg: ListenerRegistration? = null
     private val idFormat = NumberFormat.getIntegerInstance(Locale("id", "ID"))
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        enableEdgeToEdge()
         binding = ActivityHomeCustomerBinding.inflate(layoutInflater)
+        setContentView(binding.root)
+
+        // Ikon status bar gelap karena latar top bar putih
+        WindowCompat.getInsetsController(window, window.decorView)
+            .isAppearanceLightStatusBars = true
+
+        // Padding atas = tinggi status bar, area itu ikut berwarna putih
+        ViewCompat.setOnApplyWindowInsetsListener(binding.main) { _, insets ->
+            val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+            binding.topBarContainer.root.setPadding(0, bars.top, 0, 0)
+            insets
+        }
+
 
         setContentView(binding.root)
         val notifBadge = setupTopBar(showNotificationDot = true)
@@ -36,15 +56,29 @@ class HomeActivityCustomer : AppCompatActivity() {
         }
 
         setupClicks()
-        listenUser(uid)
-        listenVehicles(uid)
+    }
+
+    // Listener dipasang tiap layar tampil & dilepas saat tersembunyi,
+    // supaya data ikut segar setelah kembali dari halaman Daftar Mobil.
+    override fun onStart() {
+        super.onStart()
+        val uid = auth.currentUser?.uid ?: return
+        userReg = listenUser(uid)
+        vehiclesReg = listenVehicles(uid)
+    }
+
+    override fun onStop() {
+        super.onStop()
+        userReg?.remove()
+        vehiclesReg?.remove()
+        userReg = null
+        vehiclesReg = null
     }
 
     /** Nama + poin dari dokumen users/{uid} (realtime) */
-    private fun listenUser(uid: String) {
+    private fun listenUser(uid: String): ListenerRegistration =
         db.collection("users").document(uid)
-            // 'this' = listener otomatis berhenti saat Activity ditutup
-            .addSnapshotListener(this) { snap, error ->
+            .addSnapshotListener { snap, error ->
                 if (error != null) {
                     toast("Gagal memuat profil")
                     return@addSnapshotListener
@@ -59,12 +93,11 @@ class HomeActivityCustomer : AppCompatActivity() {
                 binding.tvUserName.text = name
                 binding.tvPoints.text = idFormat.format(points)
             }
-    }
 
     /** Kendaraan dari sub-koleksi users/{uid}/vehicles (realtime) */
-    private fun listenVehicles(uid: String) {
+    private fun listenVehicles(uid: String): ListenerRegistration =
         db.collection("users").document(uid).collection("vehicles")
-            .addSnapshotListener(this) { snap, error ->
+            .addSnapshotListener { snap, error ->
                 if (error != null) {
                     toast("Gagal memuat kendaraan")
                     return@addSnapshotListener
@@ -76,7 +109,6 @@ class HomeActivityCustomer : AppCompatActivity() {
                 currentVehicle = list.firstOrNull { it.primary } ?: list.firstOrNull()
                 showVehicle(currentVehicle)
             }
-    }
 
     private fun showVehicle(v: Vehicle?) {
         if (v == null) {
@@ -113,15 +145,9 @@ class HomeActivityCustomer : AppCompatActivity() {
 
     private fun setupClicks() {
         binding.cardVehicle.setOnClickListener {
-            if (currentVehicle == null) {
-                // startActivity(Intent(this, AddVehicleActivity::class.java))
-                toast("Buka halaman tambah kendaraan")
-            } else {
-                // startActivity(Intent(this, VehicleDetailActivity::class.java)
-                //     .putExtra("vehicleId", currentVehicle!!.id))
-                toast("Detail kendaraan")
-            }
+            startActivity(Intent(this, MyVehiclesActivityCustomer::class.java))
         }
+
         binding.menuBooking.setOnClickListener { toast("Booking servis") }
         binding.menuLayanan.setOnClickListener { toast("Daftar layanan") }
         binding.menuBengkel.setOnClickListener { toast("Lokasi bengkel") }

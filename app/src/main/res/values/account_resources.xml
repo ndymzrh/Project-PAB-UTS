@@ -20,13 +20,13 @@
 
     <!-- Kendaraan -->
     <string name="kendaraan_terdaftar">Kendaraan Terdaftar</string>
-    <string name="tambah_mobil">Tambah Mobil</string>
+
     <string name="mobil_utama">Mobil Utama</string>
-    <string name="odometer_saat_ini">Odometer Saat Ini</string>
+    <string name="acc_odometer_saat_ini">Odometer Saat Ini</string>
     <string name="servis_berikutnya_label">Servis Berikutnya</string>
     <string name="kelola_mobil">Kelola Mobil</string>
     <string name="booking_servis">Booking Servis</string>
-    <string name="belum_ada_mobil">Belum ada mobil terdaftar.\nKetuk \"Tambah Mobil\" untuk memulai.</string>
+    <string name="acc_belum_ada_mobil">Belum ada mobil terdaftar.\nKetuk \"Tambah Mobil\" untuk memulai.</string>
 
     <!-- Section -->
     <string name="section_layanan_akun">LAYANAN &amp; AKUN</string>
@@ -55,7 +55,7 @@
     <string name="konfirmasi_keluar_title">Keluar dari akun?</string>
     <string name="konfirmasi_keluar_msg">Kamu harus login lagi untuk memakai aplikasi.</string>
     <string name="ya_keluar">Ya, keluar</string>
-    <string name="batal">Batal</string>
+
     <string name="app_version">Annova AutoCare App v1.0</string>
     <string name="app_copyright">Standar Bengkel Modern Indonesia © 2026</string>
 </resources>

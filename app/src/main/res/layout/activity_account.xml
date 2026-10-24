@@ -421,7 +421,7 @@
                         android:layout_height="wrap_content"
                         android:gravity="center"
                         android:padding="28dp"
-                        android:text="@string/belum_ada_mobil"
+                        android:text="@string/acc_belum_ada_mobil"
                         android:textColor="@color/bk_text_secondary"
                         android:textSize="13sp" />
 
@@ -492,7 +492,7 @@
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
                                     android:layout_marginTop="6dp"
-                                    android:background="@drawable/bg_plate"
+                                    android:background="@drawable/bg_plate_account"
                                     android:fontFamily="monospace"
                                     android:paddingStart="10dp"
                                     android:paddingTop="3dp"
@@ -529,7 +529,7 @@
                                     android:drawableStart="@drawable/ic_speed"
                                     android:drawableTint="@color/bk_text_secondary"
                                     android:gravity="center_vertical"
-                                    android:text="@string/odometer_saat_ini"
+                                    android:text="@string/acc_odometer_saat_ini"
                                     android:textColor="@color/bk_text_secondary"
                                     android:textSize="11sp" />
 
