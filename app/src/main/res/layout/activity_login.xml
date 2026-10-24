@@ -23,6 +23,8 @@
         android:padding="24dp">
 
         <!-- Logo -->
+
+        <!-- Judul -->
         <ImageView
             android:id="@+id/imgLogo"
             android:layout_width="100dp"
@@ -30,16 +32,16 @@
             android:layout_marginTop="32dp"
             android:contentDescription="Logo aplikasi"
             android:src="@android:drawable/ic_menu_preferences"
-            app:tint="#1565C0" />
+            app:tint="#379FD0" />
 
-        <!-- Judul -->
         <TextView
             android:id="@+id/tvTitle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
+            android:fontFamily="@font/poppins_bold"
             android:text="Annova AutoCare"
-            android:textColor="#1A237E"
+            android:textColor="#022C50"
             android:textSize="28sp"
             android:textStyle="bold" />
 
@@ -48,6 +50,7 @@
             android:layout_width="309dp"
             android:layout_height="wrap_content"
             android:layout_marginTop="4dp"
+            android:fontFamily="@font/poppins_medium"
             android:text="Masuk untuk mengelola perawatan kendaraan dan riwayat operasional bengkel Anda"
             android:textAlignment="center"
             android:textColor="#607D8B"
@@ -71,6 +74,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:fontFamily="sans-serif-medium"
                     android:text="Masuk sebagai"
                     android:textColor="#37474F"
                     android:textSize="14sp"
@@ -93,6 +97,7 @@
                         android:background="@drawable/bg_role_selector"
                         android:button="@null"
                         android:checked="true"
+                        android:fontFamily="@font/poppins_medium"
                         android:gravity="center"
                         android:text="Pelanggan"
                         android:textColor="@color/role_text_color"
@@ -106,6 +111,7 @@
                         android:layout_weight="1"
                         android:background="@drawable/bg_role_selector"
                         android:button="@null"
+                        android:fontFamily="@font/poppins_medium"
                         android:gravity="center"
                         android:text="Petugas"
                         android:textColor="@color/role_text_color"
@@ -126,6 +132,7 @@
                         android:id="@+id/etEmail"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
+                        android:fontFamily="@font/poppins"
                         android:inputType="textEmailAddress"
                         android:maxLines="1" />
                 </com.google.android.material.textfield.TextInputLayout>
@@ -144,6 +151,7 @@
                         android:id="@+id/etPassword"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
+                        android:fontFamily="@font/poppins"
                         android:inputType="textPassword"
                         android:maxLines="1" />
                 </com.google.android.material.textfield.TextInputLayout>
@@ -155,9 +163,10 @@
                     android:layout_height="wrap_content"
                     android:layout_gravity="end"
                     android:layout_marginTop="8dp"
+                    android:fontFamily="@font/poppins_medium"
                     android:padding="4dp"
                     android:text="Lupa Kata sandi?"
-                    android:textColor="#1565C0"
+                    android:textColor="#022C50"
                     android:textSize="13sp" />
 
                 <!-- Tombol Login -->
@@ -166,10 +175,11 @@
                     android:layout_width="match_parent"
                     android:layout_height="56dp"
                     android:layout_marginTop="16dp"
+                    android:fontFamily="@font/poppins_semibold"
                     android:text="Masuk ke Annova AutoCare"
                     android:textAllCaps="false"
                     android:textSize="16sp"
-                    app:backgroundTint="#1565C0"
+                    app:backgroundTint="#022C50"
                     app:cornerRadius="12dp" />
 
                 <ProgressBar
@@ -193,6 +203,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:fontFamily="@font/poppins_medium"
                 android:text="Belum memiliki akun Annova? "
                 android:textColor="#607D8B" />
 
@@ -200,8 +211,9 @@
                 android:id="@+id/tvDaftar"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:fontFamily="@font/poppins_medium"
                 android:text="Daftar Sekarang"
-                android:textColor="#1565C0"
+                android:textColor="#022C50"
                 android:textStyle="bold" />
         </LinearLayout>
 

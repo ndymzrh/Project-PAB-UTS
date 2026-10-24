@@ -21,8 +21,9 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="24dp"
+            android:fontFamily="@font/poppins_bold"
             android:text="Buat Akun Customer"
-            android:textColor="#1A237E"
+            android:textColor="#022C50"
             android:textSize="26sp"
             android:textStyle="bold" />
 
@@ -30,6 +31,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="4dp"
+            android:fontFamily="@font/poppins_medium"
             android:text="Daftar untuk mulai booking service mobil"
             android:textColor="#607D8B"
             android:textSize="14sp" />
@@ -58,6 +60,7 @@
                         android:id="@+id/etNama"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
+                        android:fontFamily="@font/poppins"
                         android:inputType="textPersonName|textCapWords"
                         android:maxLines="1" />
                 </com.google.android.material.textfield.TextInputLayout>
@@ -74,6 +77,7 @@
                         android:id="@+id/etEmail"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
+                        android:fontFamily="@font/poppins"
                         android:inputType="textEmailAddress"
                         android:maxLines="1" />
                 </com.google.android.material.textfield.TextInputLayout>
@@ -90,6 +94,7 @@
                         android:id="@+id/etNoHp"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
+                        android:fontFamily="@font/poppins"
                         android:inputType="phone"
                         android:maxLines="1" />
                 </com.google.android.material.textfield.TextInputLayout>
@@ -107,6 +112,7 @@
                         android:id="@+id/etPassword"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
+                        android:fontFamily="@font/poppins"
                         android:inputType="textPassword"
                         android:maxLines="1" />
                 </com.google.android.material.textfield.TextInputLayout>
@@ -124,6 +130,7 @@
                         android:id="@+id/etKonfirmasi"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
+                        android:fontFamily="@font/poppins"
                         android:inputType="textPassword"
                         android:maxLines="1" />
                 </com.google.android.material.textfield.TextInputLayout>
@@ -133,10 +140,11 @@
                     android:layout_width="match_parent"
                     android:layout_height="56dp"
                     android:layout_marginTop="20dp"
+                    android:fontFamily="@font/poppins_semibold"
                     android:text="Daftar"
                     android:textAllCaps="false"
                     android:textSize="16sp"
-                    app:backgroundTint="#1565C0"
+                    app:backgroundTint="#022C50"
                     app:cornerRadius="12dp" />
 
                 <ProgressBar
@@ -158,15 +166,17 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Sudah punya akun? "
+                android:fontFamily="@font/poppins_medium"
+                android:text="Sudah punya akun Annova? "
                 android:textColor="#607D8B" />
 
             <TextView
                 android:id="@+id/tvKembaliLogin"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Login"
-                android:textColor="#1565C0"
+                android:fontFamily="@font/poppins_semibold"
+                android:text="Masuk"
+                android:textColor="#022C50"
                 android:textStyle="bold" />
         </LinearLayout>
 
