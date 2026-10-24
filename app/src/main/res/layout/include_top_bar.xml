@@ -1,14 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- res/layout/include_top_bar.xml : top bar yang di-include ke setiap layar -->
-<com.google.android.material.appbar.MaterialToolbar
+<com.google.android.material.appbar.AppBarLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:id="@+id/topBar"
     android:layout_width="match_parent"
-    android:layout_height="?attr/actionBarSize"
+    android:layout_height="wrap_content"
     android:background="@android:color/white"
-    app:logo="@drawable/ic_logo_bar"
-    app:menu="@menu/menu_top_bar"
-    app:title="Annova AutoCare"
-    app:titleMarginStart="8dp"
-    app:titleTextColor="@color/bk_primary" />
+    android:id="@+id/appBar"
+    app:elevation="0dp">
+
+    <com.google.android.material.appbar.MaterialToolbar
+        android:id="@+id/topBar"
+        android:layout_width="match_parent"
+        android:layout_height="?attr/actionBarSize"
+        android:background="@android:color/white"
+        app:logo="@drawable/ic_logo_bar"
+        app:menu="@menu/menu_top_bar"
+        app:title="Annova AutoCare"
+        app:titleMarginStart="8dp"
+        app:titleTextColor="@color/bk_primary" />
+</com.google.android.material.appbar.AppBarLayout>

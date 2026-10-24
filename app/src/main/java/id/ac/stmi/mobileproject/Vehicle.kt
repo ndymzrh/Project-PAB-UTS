@@ -2,10 +2,6 @@ package id.ac.stmi.mobileproject
 
 import com.google.firebase.Timestamp
 
-/**
- * Dokumen: users/{uid}/vehicles/{vehicleId}
- * Semua properti punya nilai default supaya bisa dibaca Firestore (toObject).
- */
 data class Vehicle(
     val id: String = "",
     val brand: String = "",              // contoh: Toyota
@@ -16,7 +12,10 @@ data class Vehicle(
     val lastServiceOdometer: Long = 0,   // km saat servis terakhir
     val serviceIntervalKm: Long = 5000,  // jarak servis berkala
     val primary: Boolean = false,        // mobil utama yang ditampilkan di beranda
-    val createdAt: Timestamp? = null
+    val createdAt: Timestamp? = null,
+    val color: String = "",              // contoh: Silver
+    val transmission: String = "",       // Manual / Otomatis
+    val fuelType: String = ""            // Bensin / Diesel / Hybrid / Listrik
 ) {
     val displayName: String
         get() = listOf(brand, model, if (year > 0) year.toString() else "")

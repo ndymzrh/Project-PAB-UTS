@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- res/values/strings_mobil.xml (tambahan, tidak mengubah strings_bengkel.xml) -->
+<resources>
+    <string name="kembali">Kembali</string>
+    <string name="hapus">Hapus</string>
+    <string name="daftar_mobil">Daftar Mobil</string>
+    <string name="tambah_mobil">Tambah Mobil</string>
+    <string name="simpan_mobil">Simpan Mobil</string>
+    <string name="belum_ada_mobil">Belum ada mobil</string>
+    <string name="belum_ada_mobil_desc">Tambahkan mobil Anda untuk mulai booking servis dan memantau jadwal servis berkala.</string>
+
+    <string name="informasi_mobil">Informasi Mobil</string>
+    <string name="merek">Merek</string>
+    <string name="model">Model</string>
+    <string name="tahun">Tahun</string>
+    <string name="warna">Warna</string>
+    <string name="plat_nomor">Plat Nomor</string>
+    <string name="plat_helper">Contoh: B 1234 XYZ</string>
+
+    <string name="spesifikasi">Spesifikasi</string>
+    <string name="transmisi">Transmisi</string>
+    <string name="manual">Manual</string>
+    <string name="otomatis">Otomatis</string>
+    <string name="bahan_bakar">Bahan bakar</string>
+    <string name="bensin">Bensin</string>
+    <string name="diesel">Diesel</string>
+    <string name="hybrid">Hybrid</string>
+    <string name="listrik">Listrik</string>
+
+    <string name="kilometer">Kilometer</string>
+    <string name="odometer_saat_ini">Odometer saat ini</string>
+    <string name="km_servis_terakhir">Km saat servis terakhir</string>
+    <string name="km_servis_helper">Dipakai untuk menghitung jadwal servis berikutnya</string>
+    <string name="utama">Utama</string>
+    <string name="interval_servis">Interval servis berkala</string>
+    <string name="interval_helper">Umumnya 5.000 km</string>
+    <string name="jadikan_utama">Jadikan mobil utama</string>
+    <string name="jadikan_utama_desc">Ditampilkan di beranda</string>
+
+    <string name="jumlah_mobil">%1$d mobil terdaftar</string>
+    <string name="hapus_mobil_judul">Hapus mobil?</string>
+    <string name="hapus_mobil_pesan">%1$s akan dihapus dari daftar Anda.</string>
+    <string name="batal">Batal</string>
+    <string name="error_wajib">Wajib diisi</string>
+    <string name="error_tahun">Tahun tidak valid</string>
+    <string name="error_km_servis">Tidak boleh lebih besar dari odometer</string>
+    <string name="error_interval">Harus lebih dari 0</string>
+    <string name="mobil_tersimpan">Mobil berhasil disimpan</string>
+    <string name="mobil_terhapus">Mobil dihapus</string>
+    <string name="gagal_memuat">Gagal memuat data mobil</string>
+    <string name="gagal_menyimpan">Gagal menyimpan, coba lagi</string>
+    <string name="belum_login">Silakan login terlebih dahulu</string>
+</resources>

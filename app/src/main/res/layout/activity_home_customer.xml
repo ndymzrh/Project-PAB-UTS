@@ -7,11 +7,18 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/bk_bg_screen"
+    android:id="@+id/main"
     tools:context=".HomeActivityCustomer">
+
+    <!-- ============ TOP BAR ============ -->
+    <include
+        android:id="@+id/topBarContainer"
+        layout="@layout/include_top_bar" />
 
     <androidx.core.widget.NestedScrollView
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+        app:layout_behavior="@string/appbar_scrolling_view_behavior"
         android:clipToPadding="false"
         android:fillViewport="true"
         android:paddingBottom="96dp">
@@ -21,8 +28,7 @@
             android:layout_height="wrap_content"
             android:orientation="vertical">
 
-            <!-- ============ TOP BAR ============ -->
-            <include layout="@layout/include_top_bar" />
+
 
             <!-- ============ HEADER: SAPAAN + POIN ============ -->
             <LinearLayout

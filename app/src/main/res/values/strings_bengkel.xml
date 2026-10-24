@@ -14,9 +14,9 @@
     <string name="booking_aktif">Booking Aktif</string>
     <string name="terjadwal">Terjadwal</string>
     <string name="promosi">Promosi</string>
-    <string name="bahasa">Bahasa</string>
     <string name="bantuan">Bantuan</string>
     <string name="notifikasi">Notifikasi</string>
+    <string name="logout">Logout</string>
 
     <!-- Bottom navigation -->
     <string name="nav_beranda">Beranda</string>
