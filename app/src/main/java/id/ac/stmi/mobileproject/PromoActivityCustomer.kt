@@ -172,7 +172,10 @@ class PromoActivityCustomer : AppCompatActivity() {
                 }
                 R.id.nav_promo -> true
                 R.id.nav_bengkel -> { toast("Peta bengkel"); false }
-                R.id.nav_account -> { toast("Akun"); false }
+                R.id.nav_account -> {
+                    startActivity(Intent(this, AccountActivity::class.java))
+                    false
+                }
                 else -> false
             }
         }
