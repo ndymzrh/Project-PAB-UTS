@@ -1,5 +1,6 @@
 package id.ac.stmi.mobileproject
 
+import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
 import android.view.View
@@ -16,6 +17,7 @@ import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
 import java.text.NumberFormat
 import java.util.Locale
+import kotlin.jvm.java
 
 class HomeActivityCustomer : AppCompatActivity() {
 
@@ -159,7 +161,9 @@ class HomeActivityCustomer : AppCompatActivity() {
         }
 
         binding.menuBooking.setOnClickListener { toast("Booking servis") }
-        binding.menuLayanan.setOnClickListener { toast("Daftar layanan") }
+        binding.menuLayanan.setOnClickListener {
+            startActivity(Intent(this, LayananActivity::class.java))
+        }
         binding.menuBengkel.setOnClickListener { toast("Lokasi bengkel") }
         binding.menuRiwayat.setOnClickListener { toast("Riwayat servis") }
         binding.cardActiveBooking.setOnClickListener { toast("Detail booking") }

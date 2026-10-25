@@ -11,6 +11,7 @@ import java.text.NumberFormat
 import java.util.Locale
 
 class VehicleAdapter(
+    private val onClick: (Vehicle) -> Unit,
     private val onDelete: (Vehicle) -> Unit
 ) : ListAdapter<Vehicle, VehicleAdapter.VH>(Diff) {
 
@@ -44,6 +45,7 @@ class VehicleAdapter(
 
             tvOdometer.text = "Odometer: ${nf.format(v.odometer)} km"
 
+            root.setOnClickListener { onClick(v) }
             btnDelete.setOnClickListener { onDelete(v) }
         }
     }

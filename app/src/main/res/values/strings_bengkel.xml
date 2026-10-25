@@ -17,6 +17,21 @@
     <string name="bantuan">Bantuan</string>
     <string name="notifikasi">Notifikasi</string>
     <string name="logout">Logout</string>
+    <string name="detail_mobil">Detail Mobil</string>
+    <string name="edit_mobil">Edit Mobil</string>
+    <string name="simpan_perubahan">Simpan Perubahan</string>
+    <string name="perubahan_tersimpan">Perubahan disimpan</string>
+    <string name="mobil_tidak_ditemukan">Mobil tidak ditemukan</string>
+    <string name="hapus_mobil">Hapus Mobil</string>
+    <string name="jadwal_servis">Jadwal Servis</string>
+    <string name="servis_terakhir">Servis terakhir</string>
+    <string name="servis_berikutnya_pada">Servis berikutnya pada</string>
+    <string name="sisa_jarak">Sisa jarak</string>
+    <string name="status_aman">Aman</string>
+    <string name="status_segera">Segera servis</string>
+    <string name="status_terlambat">Waktunya servis</string>
+    <string name="sisa_km_lagi">%1$s km lagi</string>
+    <string name="lewat_km">Lewat %1$s km</string>
 
     <!-- Bottom navigation -->
     <string name="nav_beranda">Beranda</string>

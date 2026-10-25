@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- res/values/strings_layanan.xml : teks halaman Layanan & Detail Layanan.
+     Semua nama diawali "svc_" supaya tidak bentrok dengan string temanmu. -->
+<resources>
+
+    <!-- Tambahkan di res/values/strings_layanan.xml, di dalam <resources> -->
+    <string name="svc_belum_ada_layanan">Belum ada layanan tersedia.\nSilakan cek kembali nanti.</string>
+
+    <!-- Halaman Layanan -->
+    <string name="svc_servis_untuk">Servis untuk:</string>
+    <string name="svc_ubah">Ubah</string>
+    <string name="svc_belum_ada_mobil">Belum ada mobil terdaftar</string>
+    <string name="svc_cari_hint">Cari jenis servis, oli, rem, spooring…</string>
+    <string name="svc_filter">Filter</string>
+    <string name="svc_semua">Semua</string>
+    <string name="svc_kosong">Layanan tidak ditemukan.\nCoba kata kunci atau kategori lain.</string>
+
+    <!-- Banner -->
+    <string name="svc_banner_tag">SPESIAL BULAN INI</string>
+    <string name="svc_banner_judul">Paket Servis Berkala Spesial</string>
+    <string name="svc_banner_isi">Gratis pengecekan menyeluruh 25 titik keselamatan &amp; diskon jasa mekanik 15% untuk Honda HR-V.</string>
+    <string name="svc_banner_garansi">Garansi Resmi 14 Hari</string>
+    <string name="svc_klaim_kupon">Klaim Kupon</string>
+
+    <!-- Kartu layanan -->
+    <string name="svc_cakupan">CAKUPAN SERVIS:</string>
+    <string name="svc_estimasi_total">Estimasi Total</string>
+    <string name="svc_detail">Detail</string>
+    <string name="svc_booking">Booking</string>
+    <string name="svc_dipilih">Dipilih</string>
+
+    <!-- Catatan bawah -->
+    <string name="svc_garansi_judul">Garansi Resmi Annova Care</string>
+    <string name="svc_garansi_isi">Semua pengerjaan dilindungi Garansi Servis 14 Hari atau 1.000 km dan suku cadang orisinal OEM bergaransi resmi. Transparansi biaya tanpa ada biaya tersembunyi.</string>
+
+    <!-- Bar pilihan -->
+    <string name="svc_lanjut_jadwal">Lanjut Jadwal</string>
+
+    <!-- Detail layanan -->
+    <string name="svc_detail_judul">Detail Servis &amp; Reservasi</string>
+    <string name="svc_kendaraan_terpilih">KENDARAAN TERPILIH</string>
+    <string name="svc_ganti_mobil">Ganti Mobil</string>
+    <string name="svc_sesuai_mesin">Sesuai Spesifikasi Mesin</string>
+    <string name="svc_rincian">Rincian Pengerjaan</string>
+    <string name="svc_catatan_judul">Catatan Transparansi Biaya</string>
+    <string name="svc_catatan_isi">Estimasi biaya dihitung untuk kondisi standar. Jika teknisi menemukan komponen aus yang memerlukan penggantian saat inspeksi awal, Service Advisor akan meminta persetujuan Anda terlebih dahulu sebelum dikerjakan.</string>
+    <string name="svc_jaminan_judul">Jaminan Bengkel Resmi Annova</string>
+    <string name="svc_jaminan_isi">Garansi Pengerjaan 14 Hari atau 1.000 KM jika terjadi kendala pasca-servis, bebas biaya jasa pengecekan ulang.</string>
+    <string name="svc_total_estimasi">Total Estimasi Layanan</string>
+    <string name="svc_booking_ini">Booking Layanan Ini</string>
+    <string name="svc_layanan_unggulan">Layanan Unggulan</string>
+    <string name="svc_bagikan">Bagikan</string>
+    <string name="svc_simpan">Simpan</string>
+    <string name="svc_kembali">Kembali</string>
+</resources>
