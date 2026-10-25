@@ -226,7 +226,12 @@ class AccountActivity : AppCompatActivity() {
                     finish()
                     true
                 }
-                R.id.nav_promo -> { toast("Promo"); true }
+                R.id.nav_promo -> { startActivity(
+                    Intent(this, PromoActivityCustomer::class.java)
+                        .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+                )
+                    finish()
+                    true }
                 R.id.nav_bengkel -> { toast("Peta bengkel"); true }
                 else -> false
             }

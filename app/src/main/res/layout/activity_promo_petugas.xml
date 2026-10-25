@@ -151,12 +151,14 @@
         android:id="@+id/bottomNav"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_gravity="bottom"
         android:background="@android:color/white"
         app:elevation="12dp"
         app:itemActiveIndicatorStyle="@null"
         app:itemIconTint="@color/bk_nav_item_color"
         app:itemTextColor="@color/bk_nav_item_color"
         app:labelVisibilityMode="labeled"
-        app:menu="@menu/menu_bottom_nav" />
+        app:menu="@menu/menu_bottom_nav_petugas" />
+
 
 </LinearLayout>

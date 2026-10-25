@@ -268,22 +268,38 @@
     </androidx.core.widget.NestedScrollView>
 
     <FrameLayout
+        android:id="@+id/navContainer"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_gravity="bottom">
+        android:layout_gravity="bottom"
+        android:clipChildren="false"
+        android:clipToPadding="false">
 
         <com.google.android.material.bottomnavigation.BottomNavigationView
             android:id="@+id/bottomNav"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:layout_marginTop="28dp"
             android:background="@android:color/white"
-            app:elevation="12dp"
+            app:elevation="0dp"
             app:itemActiveIndicatorStyle="@null"
             app:itemIconTint="@color/bk_nav_item_color"
             app:itemTextColor="@color/bk_nav_item_color"
             app:labelVisibilityMode="labeled"
             app:menu="@menu/menu_bottom_nav" />
 
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/fabBooking"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="top|center_horizontal"
+            android:layout_marginTop="4dp"
+            android:contentDescription="@string/booking"
+            android:src="@drawable/ic_calendar"
+            app:backgroundTint="@color/bk_accent"
+            android:translationZ="12dp"
+            app:elevation="12dp"
+            app:tint="@android:color/white" />
     </FrameLayout>
 
 </LinearLayout>
