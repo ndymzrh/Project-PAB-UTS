@@ -53,7 +53,8 @@ class HomeActivityPetugas : AppCompatActivity() {
         binding.menuBooking.setOnClickListener { toast("Kelola booking") }
         binding.menuServis.setOnClickListener { toast("Kelola servis") }
         binding.menuTeknisi.setOnClickListener { toast("Kelola teknisi") }
-        binding.menuPelanggan.setOnClickListener { toast("Data pelanggan") }
+        binding.menuPelanggan.setOnClickListener { startActivity(Intent(this,
+            PetugasPelangganActivity::class.java)) }
         binding.cardLaporan.setOnClickListener { toast("Laporan pendapatan") }
 
         binding.bottomNav.selectedItemId = R.id.nav_home
