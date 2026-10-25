@@ -23,6 +23,7 @@ class SemuaMenuActivityPetugas : AppCompatActivity() {
         const val MENU_LAYANAN = "layanan"
         const val MENU_PROMO = "promo"
         const val MENU_LAPORAN = "laporan"
+        const val MENU_STAFF = "Staff"
     }
 
     private lateinit var binding: ActivitySemuaMenuPetugasBinding
@@ -74,6 +75,7 @@ class SemuaMenuActivityPetugas : AppCompatActivity() {
         )
         if (isPemilik) {
             menu += MenuPetugas(MENU_LAPORAN, "Laporan", R.drawable.ic_receipt)
+            menu += MenuPetugas(MENU_STAFF, "Staff", R.drawable.ic_staff)
         }
         return menu
     }
@@ -91,6 +93,7 @@ class SemuaMenuActivityPetugas : AppCompatActivity() {
                 startActivity(Intent(this, LayananActivityPetugas::class.java))
             }
             MENU_LAPORAN -> toast("Laporan pendapatan")
+            MENU_STAFF -> toast("Kelola Staff")
         }
     }
 
