@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Satu baris cakupan servis: ikon centang + teks -->
+<TextView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:drawablePadding="8dp"
+    android:drawableStart="@drawable/ic_svc_check_circle"
+    android:drawableTint="@color/bk_primary"
+    android:gravity="center_vertical"
+    android:paddingTop="3dp"
+    android:paddingBottom="3dp"
+    android:textColor="@color/bk_text_primary"
+    android:textSize="12sp" />
