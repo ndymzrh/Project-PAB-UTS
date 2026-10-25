@@ -90,8 +90,13 @@ class LoginActivity : AppCompatActivity() {
         // Tombol "Masuk"
         btnLogin.setOnClickListener { prosesLogin() }
 
-        // "Lupa Kata sandi?"
-        tvLupaPassword.setOnClickListener { kirimResetPassword() }
+        // "Lupa Kata sandi?" -> halaman Lupa Kata Sandi (email yang sudah diketik ikut terbawa)
+        tvLupaPassword.setOnClickListener {
+            startActivity(
+                Intent(this, ForgotPasswordActivity::class.java)
+                    .putExtra(ForgotPasswordActivity.EXTRA_EMAIL, etEmail.text.toString().trim())
+            )
+        }
 
         // 4. Kalau sebelumnya sudah login, langsung arahkan sesuai role
         auth.currentUser?.let { cekRoleDanMasuk(it.uid, roleDipilih = null) }
@@ -139,6 +144,7 @@ class LoginActivity : AppCompatActivity() {
                     toast("Terjadi kesalahan, coba lagi")
                     return@addOnCompleteListener
                 }
+
 
                 cekRoleDanMasuk(uid, roleDipilih)
             }
@@ -200,32 +206,6 @@ class LoginActivity : AppCompatActivity() {
 
         startActivity(Intent(this, tujuan))
         finishAffinity()
-    }
-
-    // ---------------------------------------------------------------
-    // LUPA PASSWORD
-    // ---------------------------------------------------------------
-    private fun kirimResetPassword() {
-        tilEmail.error = null
-        val email = etEmail.text.toString().trim().lowercase()
-
-        if (email.isEmpty() || !Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
-            tilEmail.error = "Isi email yang valid dulu untuk reset password"
-            etEmail.requestFocus()
-            return
-        }
-
-        setLoading(true)
-        auth.sendPasswordResetEmail(email)
-            .addOnCompleteListener(this) { task ->
-                setLoading(false)
-                if (task.isSuccessful) {
-                    // Pesan sengaja netral supaya tidak membocorkan email mana yang terdaftar
-                    toast("Jika email terdaftar, tautan reset password sudah dikirim")
-                } else {
-                    toast(pesanError(task.exception))
-                }
-            }
     }
 
     // ---------------------------------------------------------------
