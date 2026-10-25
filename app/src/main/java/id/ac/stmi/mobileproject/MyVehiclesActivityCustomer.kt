@@ -10,11 +10,15 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.ListenerRegistration
 import id.ac.stmi.mobileproject.databinding.ActivityMyVehiclesCustomerBinding
+import kotlin.jvm.java
 
 class MyVehiclesActivityCustomer : AppCompatActivity() {
 
     private lateinit var binding: ActivityMyVehiclesCustomerBinding
-    private val adapter = VehicleAdapter { confirmDelete(it) }
+    private val adapter = VehicleAdapter(
+        onClick = { openDetail(it) },
+        onDelete = { confirmDelete(it) }
+    )
     private var registration: ListenerRegistration? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -72,6 +76,13 @@ class MyVehiclesActivityCustomer : AppCompatActivity() {
         rvVehicles.isVisible = !empty
         fabAddVehicle.isVisible = !empty   // saat kosong, tombol ada di tengah layar
         adapter.submitList(list)
+    }
+
+    private fun openDetail(v: Vehicle) {
+        startActivity(
+            Intent(this, VehicleDetailActivityCustomer::class.java)
+                .putExtra(EXTRA_VEHICLE_ID, v.id)
+        )
     }
 
     private fun confirmDelete(v: Vehicle) {
