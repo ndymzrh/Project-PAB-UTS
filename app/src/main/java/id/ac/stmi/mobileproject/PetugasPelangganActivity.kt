@@ -1,5 +1,6 @@
 package id.ac.stmi.mobileproject
 
+import android.content.Intent
 import android.os.Bundle
 import android.view.View
 import android.widget.Toast
@@ -18,7 +19,12 @@ class PetugasPelangganActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityPetugasPelangganBinding
     private val db by lazy { FirebaseFirestore.getInstance() }
-    private val adapter = PelangganAdapter()
+    private val adapter = PelangganAdapter { p ->
+        startActivity(
+            Intent(this, PelangganDetailActivity::class.java)
+                .putExtra(PelangganDetailActivity.EXTRA_UID, p.uid)
+        )
+    }
     private var listener: ListenerRegistration? = null
     private var semuaPelanggan: List<Pelanggan> = emptyList()
 

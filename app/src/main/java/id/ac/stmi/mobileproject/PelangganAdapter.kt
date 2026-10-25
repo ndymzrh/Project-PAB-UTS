@@ -12,7 +12,9 @@ data class Pelanggan(
     val noHp: String
 )
 
-class PelangganAdapter : RecyclerView.Adapter<PelangganAdapter.VH>() {
+class PelangganAdapter(
+    private val onClick: (Pelanggan) -> Unit = {}
+) : RecyclerView.Adapter<PelangganAdapter.VH>() {
 
     private var data: List<Pelanggan> = emptyList()
 
@@ -32,6 +34,7 @@ class PelangganAdapter : RecyclerView.Adapter<PelangganAdapter.VH>() {
         holder.b.tvNama.text = p.nama
         holder.b.tvEmail.text = p.email
         holder.b.tvNoHp.text = p.noHp
+        holder.b.root.setOnClickListener { onClick(p) }
     }
 
     override fun getItemCount() = data.size
