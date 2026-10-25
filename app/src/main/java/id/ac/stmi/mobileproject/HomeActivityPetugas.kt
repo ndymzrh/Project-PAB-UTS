@@ -6,11 +6,10 @@ import android.view.View
 import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowInsetsCompat
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import id.ac.stmi.mobileproject.databinding.ActivityHomePetugasBinding
+import kotlin.jvm.java
 
 class HomeActivityPetugas : AppCompatActivity() {
 
@@ -50,28 +49,26 @@ class HomeActivityPetugas : AppCompatActivity() {
     }
 
     private fun setupClicks() {
+        // Menu cepat
         binding.menuBooking.setOnClickListener { toast("Kelola booking") }
         binding.menuServis.setOnClickListener { toast("Kelola servis") }
         binding.menuTeknisi.setOnClickListener { toast("Kelola teknisi") }
-        binding.menuPelanggan.setOnClickListener { startActivity(Intent(this,
-            PetugasPelangganActivity::class.java)) }
+        binding.menuPelanggan.setOnClickListener {
+            startActivity(Intent(this, PetugasPelangganActivity::class.java))
+        }
         binding.cardLaporan.setOnClickListener { toast("Laporan pendapatan") }
+
+        // "Lihat semua" di samping judul Menu Cepat -> halaman semua menu
+        binding.btnSemuaMenu.setOnClickListener {
+            startActivity(Intent(this, SemuaMenuActivityPetugas::class.java))
+        }
+        // "Lihat semua" di samping judul Booking Masuk
+        binding.btnLihatSemua.setOnClickListener { toast("Semua booking masuk") }
 
         binding.bottomNav.selectedItemId = R.id.nav_home
         binding.bottomNav.setOnItemSelectedListener { item ->
             when (item.itemId) {
                 R.id.nav_home -> true
-                R.id.nav_promo -> {
-                    startActivity(
-                        Intent(this, PetugasPromoActivity::class.java)
-                            .addFlags(
-                                Intent.FLAG_ACTIVITY_CLEAR_TOP or
-                                        Intent.FLAG_ACTIVITY_SINGLE_TOP
-                            )
-                    )
-                    overridePendingTransition(0, 0)
-                    false
-                }
                 R.id.nav_booking -> { toast("Booking"); false }
                 R.id.nav_servis -> { toast("Servis"); false }
                 R.id.nav_account -> { toast("Akun"); false }
