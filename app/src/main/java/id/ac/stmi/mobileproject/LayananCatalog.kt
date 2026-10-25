@@ -16,7 +16,8 @@ enum class LayananKategori(val label: String) {
     OLI("Oli & Pelumasan"),
     REM("Rem & Kaki-kaki"),
     AC("AC & Kabin"),
-    SPOORING("Spooring")
+    SPOORING("Spooring"),
+    LAINNYA("Lainnya")
 }
 
 /** Satu tahapan pengerjaan (ditampilkan di halaman Detail Layanan). */
@@ -31,7 +32,7 @@ data class LayananItem(
     val deskripsiDetail: String,      // deskripsi panjang di halaman detail
     val badge: String,
     val badge2: String? = null,       // badge kedua (opsional)
-    val durasi: String,               // contoh: "30 - 45 Menit"
+    val durasi: String,               // contoh: "30 - 45 Menit" atau "60 Menit"; kosong = tidak diisi
     val harga: Long,
     val hargaCoret: Long? = null,     // harga sebelum diskon (opsional)
     val mulaiDari: Boolean = false,   // true -> tampil "Mulai Rp ..."
@@ -52,10 +53,13 @@ data class LayananItem(
     val ikon: Int
         get() = IkonLayanan.resOf(ikonKey)
 
-    /** Bentuk Map untuk ditulis ke Firestore. Tidak dipakai di app customer; berguna untuk form input petugas. */
+    /**
+     * Bentuk Map untuk ditulis ke Firestore. Field nama layanan memakai "nama"
+     * supaya sama dengan yang ditulis form petugas (LayananActivityPetugas).
+     */
     fun toMap(): Map<String, Any?> = mapOf(
         "kategori" to kategori.name,
-        "judul" to judul,
+        "nama" to judul,
         "deskripsi" to deskripsi,
         "deskripsiDetail" to deskripsiDetail,
         "badge" to badge,
@@ -99,8 +103,7 @@ fun Long.keRupiah(): String =
  *
  * - [listenSemua]  : daftar layanan realtime (dipakai LayananActivity)
  * - [listenSatu]   : satu layanan realtime (dipakai DetailLayananActivity)
- * - [semua]/[find]/[cari] : membaca salinan terakhir di memori (diisi oleh listenSemua),
- *   jadi pemanggil lama tetap bisa dipakai tanpa query ulang.
+ * - [semua]/[find]/[cari] : membaca salinan terakhir di memori (diisi oleh listenSemua).
  *
  * Listener berhenti otomatis saat Activity ditutup.
  */
@@ -127,7 +130,7 @@ object LayananCatalog {
             }
             val list = snap?.documents.orEmpty()
                 .mapNotNull { it.keLayanan() }
-                .sortedWith(compareBy<LayananItem> { it.urutan }.thenBy { it.judul })
+                .sortedWith(compareBy<LayananItem> { it.urutan }.thenBy { it.judul.lowercase() })
             semua = list
             onResult(list)
         }
@@ -167,18 +170,36 @@ object LayananCatalog {
         }
     }
 
+    /** Angka apa pun dari Firestore (Long/Double) -> Long. */
+    private fun DocumentSnapshot.angka(field: String): Long? =
+        (get(field) as? Number)?.toLong()
+
+    /**
+     * Durasi bisa berupa angka menit (ditulis form petugas, mis. 60) atau teks
+     * (mis. "30 - 45 Menit"). Hasilnya selalu teks siap tampil; kosong = tidak diisi.
+     */
+    private fun DocumentSnapshot.durasiTeks(): String =
+        when (val d = get("durasi")) {
+            is Number -> d.toLong().let { if (it > 0) "$it Menit" else "" }
+            is String -> d
+            else -> ""
+        }
+
     /**
      * Dokumen Firestore -> LayananItem. Dibaca manual (bukan toObject) supaya
      * enum, list bersarang, dan field yang hilang tidak membuat aplikasi crash.
-     * Mengembalikan null kalau dokumen tidak ada, `aktif == false`, atau judul kosong.
+     * Mengembalikan null kalau dokumen tidak ada, `aktif == false`, atau nama kosong.
+     *
+     * Mendukung dua skema: field "nama" (form petugas) dan "judul" (skema lama).
      */
     private fun DocumentSnapshot.keLayanan(): LayananItem? {
         if (!exists() || getBoolean("aktif") == false) return null
-        val judul = getString("judul") ?: return null
+        val judul = (getString("nama") ?: getString("judul"))
+            ?.takeIf { it.isNotBlank() } ?: return null
 
         val kategori = getString("kategori")
             ?.let { nama -> LayananKategori.values().firstOrNull { it.name == nama } }
-            ?: LayananKategori.BERKALA
+            ?: LayananKategori.LAINNYA // belum diisi / tidak dikenal
 
         val langkah = (get("langkah") as? List<*>).orEmpty().mapNotNull { row ->
             val m = row as? Map<*, *> ?: return@mapNotNull null
@@ -191,17 +212,20 @@ object LayananCatalog {
             deskripsiDetail = "", badge = "", durasi = "", harga = 0, langkah = emptyList()
         )
 
+        val deskripsi = getString("deskripsi").orEmpty()
+
         return LayananItem(
             id = id,
             kategori = kategori,
             judul = judul,
-            deskripsi = getString("deskripsi").orEmpty(),
-            deskripsiDetail = getString("deskripsiDetail").orEmpty(),
+            deskripsi = deskripsi,
+            // Petugas belum tentu mengisi deskripsi panjang -> pakai deskripsi singkat
+            deskripsiDetail = getString("deskripsiDetail")?.takeIf { it.isNotBlank() } ?: deskripsi,
             badge = getString("badge").orEmpty(),
             badge2 = getString("badge2")?.takeIf { it.isNotBlank() },
-            durasi = getString("durasi").orEmpty(),
-            harga = getLong("harga") ?: 0L,
-            hargaCoret = getLong("hargaCoret"),
+            durasi = durasiTeks(),
+            harga = angka("harga") ?: 0L,
+            hargaCoret = angka("hargaCoret"),
             mulaiDari = getBoolean("mulaiDari") ?: false,
             cakupan = (get("cakupan") as? List<*>).orEmpty().filterIsInstance<String>(),
             langkah = langkah,
@@ -209,7 +233,7 @@ object LayananCatalog {
             sparepart = getString("sparepart") ?: default.sparepart,
             paket = getString("paket") ?: default.paket,
             ikonKey = getString("ikon") ?: default.ikonKey,
-            urutan = getLong("urutan")?.toInt() ?: 0,
+            urutan = angka("urutan")?.toInt() ?: 0,
             aktif = true
         )
     }

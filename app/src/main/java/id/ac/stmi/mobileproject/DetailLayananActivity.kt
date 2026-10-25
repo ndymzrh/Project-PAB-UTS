@@ -13,14 +13,6 @@ import com.google.firebase.auth.FirebaseAuth
 import id.ac.stmi.mobileproject.databinding.ActivityDetailLayananBinding
 import id.ac.stmi.mobileproject.databinding.ItemSvcStepBinding
 
-/**
- * Halaman Detail Layanan.
- * Layout : res/layout/activity_detail_layanan.xml (ViewBinding -> ActivityDetailLayananBinding)
- * Input  : Intent extra EXTRA_LAYANAN_ID (id layanan yang diklik di halaman Layanan)
- * Data   : dokumen Firestore koleksi "layanan" dengan id tersebut (realtime)
- * Output : kalau tombol "Booking Layanan Ini" ditekan, kirim id layanan kembali ke
- *          LayananActivity lewat setResult(RESULT_OK, ...).
- */
 class DetailLayananActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityDetailLayananBinding
@@ -109,6 +101,7 @@ class DetailLayananActivity : AppCompatActivity() {
         binding.tvChipGaransi.text = l.garansi
         binding.tvChipPart.text = l.sparepart
         binding.tvChipEstimasi.text = "Estimasi ${l.durasi}"
+        binding.tvChipEstimasi.visibility = if (l.durasi.isBlank()) View.GONE else View.VISIBLE
 
         binding.tvStepCount.text = "${l.langkah.size} tahapan pengerjaan"
         binding.tvPackage.text = l.paket

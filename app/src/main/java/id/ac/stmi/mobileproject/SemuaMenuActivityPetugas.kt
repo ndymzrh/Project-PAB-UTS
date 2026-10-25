@@ -87,7 +87,9 @@ class SemuaMenuActivityPetugas : AppCompatActivity() {
             MENU_BOOKING -> toast("Kelola booking")
             MENU_SERVIS -> toast("Kelola servis")
             MENU_TEKNISI -> toast("Kelola teknisi")
-            MENU_LAYANAN -> toast("Kelola layanan")
+            MENU_LAYANAN -> {
+                startActivity(Intent(this, LayananActivityPetugas::class.java))
+            }
             MENU_LAPORAN -> toast("Laporan pendapatan")
         }
     }

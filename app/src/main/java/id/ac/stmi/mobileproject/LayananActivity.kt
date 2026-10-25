@@ -91,9 +91,29 @@ class LayananActivity : AppCompatActivity() {
         ) {
             sudahMuat = true
             binding.chipSemua.text = "${getString(R.string.svc_semua)}  ${it.size}"
+            perbaruiChipKategori(it)
             tampilkanDaftar()
             perbaruiBar() // harga/nama layanan terpilih ikut diperbarui
         }
+    }
+
+    /**
+     * Chip kategori hanya tampil kalau ada layanan aktif di kategori itu.
+     * Kalau kategori yang sedang dipilih jadi kosong, kembali ke "Semua".
+     */
+    private fun perbaruiChipKategori(list: List<LayananItem>) {
+        val ada = list.map { it.kategori }.toSet()
+        mapOf(
+            binding.chipBerkala to LayananKategori.BERKALA,
+            binding.chipOli to LayananKategori.OLI,
+            binding.chipRem to LayananKategori.REM,
+            binding.chipAc to LayananKategori.AC,
+            binding.chipSpooring to LayananKategori.SPOORING,
+            binding.chipLainnya to LayananKategori.LAINNYA
+        ).forEach { (chip, k) ->
+            chip.visibility = if (k in ada) View.VISIBLE else View.GONE
+        }
+        if (kategori != null && kategori !in ada) binding.chipSemua.isChecked = true
     }
 
     // ------------------------------------------------------------------
@@ -128,7 +148,7 @@ class LayananActivity : AppCompatActivity() {
     // ------------------------------------------------------------------
     private fun semuaChip() = listOf(
         binding.chipSemua, binding.chipBerkala, binding.chipOli,
-        binding.chipRem, binding.chipAc, binding.chipSpooring
+        binding.chipRem, binding.chipAc, binding.chipSpooring, binding.chipLainnya
     )
 
     private fun setupChip() {
@@ -143,6 +163,7 @@ class LayananActivity : AppCompatActivity() {
                 R.id.chipRem -> LayananKategori.REM
                 R.id.chipAc -> LayananKategori.AC
                 R.id.chipSpooring -> LayananKategori.SPOORING
+                R.id.chipLainnya -> LayananKategori.LAINNYA
                 else -> null
             }
             warnaiChip(id)
@@ -190,8 +211,11 @@ class LayananActivity : AppCompatActivity() {
         val duaBadge = s.badge2 != null
         row.tvDurationInline.text = s.durasi
         row.tvDurationBelow.text = s.durasi
-        row.tvDurationInline.visibility = if (duaBadge) View.GONE else View.VISIBLE
-        row.tvDurationBelow.visibility = if (duaBadge) View.VISIBLE else View.GONE
+        val adaDurasi = s.durasi.isNotBlank()
+        row.tvDurationInline.visibility = if (adaDurasi && !duaBadge) View.VISIBLE else View.GONE
+        row.tvDurationBelow.visibility = if (adaDurasi && duaBadge) View.VISIBLE else View.GONE
+        // Badge kosong (petugas belum mengisi) -> sembunyikan
+        row.tvBadge.visibility = if (s.badge.isBlank()) View.GONE else View.VISIBLE
 
         // Judul, deskripsi, ikon
         row.tvTitle.text = s.judul
