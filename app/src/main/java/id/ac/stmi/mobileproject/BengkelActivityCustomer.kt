@@ -187,7 +187,7 @@ class BengkelActivityCustomer : AppCompatActivity() {
         val peta = binding.map
         peta.overlays.clear()
 
-        val pin = ContextCompat.getDrawable(this, R.drawable.ic_map_pin)
+        val pin = ContextCompat.getDrawable(this, R.drawable.ic_pin_custom)
         tampil.forEachIndexed { i, b ->
             peta.overlays.add(Marker(peta).apply {
                 position = OsmPoint(b.lat, b.lng)
