@@ -1,23 +1,28 @@
 package id.ac.stmi.mobileproject
 
-import android.app.Activity
 import android.content.Intent
+import android.graphics.Color
+import android.graphics.Typeface
 import android.os.Bundle
+import android.view.Gravity
 import android.view.View
+import android.widget.FrameLayout
+import android.widget.ImageView
+import android.widget.LinearLayout
+import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.content.ContextCompat.startActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
-import id.ac.stmi.mobileproject.databinding.ActivityHomeCustomerBinding
+import com.google.android.material.card.MaterialCardView
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
+import id.ac.stmi.mobileproject.databinding.ActivityHomeCustomerBinding
 import java.text.NumberFormat
 import java.util.Locale
-import kotlin.jvm.java
 
 class HomeActivityCustomer : AppCompatActivity() {
 
@@ -28,6 +33,7 @@ class HomeActivityCustomer : AppCompatActivity() {
     private var currentVehicle: Vehicle? = null
     private var userReg: ListenerRegistration? = null
     private var vehiclesReg: ListenerRegistration? = null
+    private var promoListener: PromoListener? = null
     private val idFormat = NumberFormat.getIntegerInstance(Locale("id", "ID"))
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -47,8 +53,6 @@ class HomeActivityCustomer : AppCompatActivity() {
             insets
         }
 
-
-        setContentView(binding.root)
         val notifBadge = setupTopBar(
             showNotificationDot = true,
             onLogout = {
@@ -61,6 +65,9 @@ class HomeActivityCustomer : AppCompatActivity() {
         )
         showActiveBooking(null, null, null)
 
+        // Isi promo contoh sekali saja bila belum ada
+        PromoStore.seedSekali(this)
+
         val uid = auth.currentUser?.uid
         if (uid == null) {
             goToLogin()
@@ -71,9 +78,17 @@ class HomeActivityCustomer : AppCompatActivity() {
     }
 
     // Listener dipasang tiap layar tampil & dilepas saat tersembunyi,
-    // supaya data ikut segar setelah kembali dari halaman Daftar Mobil.
+    // supaya data ikut segar setelah kembali dari halaman lain.
     override fun onStart() {
         super.onStart()
+
+        // Promo dipasang sebelum cek uid supaya tetap tampil
+        promoListener = PromoStore.listen(
+            this,
+            onChange = { tampilPromo(it) },
+            onError = { toast("Gagal memuat promo") }
+        )
+
         val uid = auth.currentUser?.uid ?: return
         userReg = listenUser(uid)
         vehiclesReg = listenVehicles(uid)
@@ -81,10 +96,59 @@ class HomeActivityCustomer : AppCompatActivity() {
 
     override fun onStop() {
         super.onStop()
+        promoListener?.remove()
+        promoListener = null
         userReg?.remove()
         vehiclesReg?.remove()
         userReg = null
         vehiclesReg = null
+    }
+
+    /** Promo dari PromoStore (data yang sama dengan yang dibuat petugas) */
+    private fun tampilPromo(semua: List<PromoItem>) {
+        val aktif = semua.filter { it.berakhir >= System.currentTimeMillis() }
+        val wadah = binding.promoContainer
+        wadah.removeAllViews()
+        binding.tvPromoHeader.visibility = if (aktif.isEmpty()) View.GONE else View.VISIBLE
+
+        fun dp(n: Int) = (n * resources.displayMetrics.density).toInt()
+        fun teks(t: String, ukuran: Float) = TextView(this).apply {
+            text = t
+            textSize = ukuran
+            setTextColor(Color.WHITE)
+            setTypeface(null, Typeface.BOLD)
+        }
+
+        aktif.forEach { p ->
+            val gambar = ImageView(this).apply {
+                scaleType = ImageView.ScaleType.CENTER_CROP
+                setImageResource(drawableId(p.gambar))
+            }
+            val info = LinearLayout(this).apply {
+                orientation = LinearLayout.VERTICAL
+                setBackgroundColor(Color.parseColor("#99000000"))
+                setPadding(dp(14), dp(8), dp(14), dp(10))
+                addView(teks(p.labelDiskon, 26f))
+                addView(teks(p.judul, 15f))
+                addView(teks("s/d ${p.berakhir.toTanggal()}", 12f))
+            }
+            val kartu = MaterialCardView(this).apply {
+                layoutParams = LinearLayout.LayoutParams(dp(320), dp(170))
+                    .apply { marginEnd = dp(12) }
+                radius = dp(20).toFloat()
+                cardElevation = dp(3).toFloat()
+                isClickable = true
+                isFocusable = true
+                setOnClickListener {
+                    startActivity(
+                        Intent(this@HomeActivityCustomer, PromoActivityCustomer::class.java)
+                    )
+                }
+                addView(gambar, FrameLayout.LayoutParams(-1, -1))
+                addView(info, FrameLayout.LayoutParams(-1, -2, Gravity.BOTTOM))
+            }
+            wadah.addView(kartu)
+        }
     }
 
     /** Nama + poin dari dokumen users/{uid} (realtime) */
@@ -181,9 +245,9 @@ class HomeActivityCustomer : AppCompatActivity() {
                                         Intent.FLAG_ACTIVITY_SINGLE_TOP
                             )
                     )
-                overridePendingTransition(0, 0)
+                    overridePendingTransition(0, 0)
                     false
-            }
+                }
                 R.id.nav_bengkel -> { toast("Peta bengkel"); true }
                 R.id.nav_account -> {
                     startActivity(Intent(this, AccountActivity::class.java))
