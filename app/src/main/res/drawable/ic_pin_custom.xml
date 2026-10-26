@@ -1,4 +1,31 @@
 <?xml version="1.0" encoding="utf-8"?>
-<selector xmlns:android="http://schemas.android.com/apk/res/android">
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Layer 1: Background Pin Oranye -->
+    <item
+        android:width="40dp"
+        android:height="40dp"
+        android:drawable="@drawable/ic_map_pin" />
 
-</selector>
+    <!-- Layer 2: Alas Lingkaran Putih -->
+    <item
+        android:width="18dp"
+        android:height="18dp"
+        android:top="6dp"
+        android:left="11dp"
+        android:right="11dp"
+        android:bottom="16dp">
+        <shape android:shape="oval">
+            <solid android:color="#FFFFFF" />
+        </shape>
+    </item>
+
+    <!-- Layer 3: Logo Bengkel -->
+    <item
+        android:width="14dp"
+        android:height="14dp"
+        android:top="8dp"
+        android:left="13dp"
+        android:right="13dp"
+        android:bottom="18dp"
+        android:drawable="@drawable/annova_auto_care" />
+</layer-list>

@@ -248,7 +248,10 @@ class HomeActivityCustomer : AppCompatActivity() {
                     overridePendingTransition(0, 0)
                     false
                 }
-                R.id.nav_bengkel -> { toast("Peta bengkel"); true }
+                R.id.nav_bengkel -> {
+                    startActivity(Intent(this, BengkelActivityCustomer::class.java))
+                    false
+                }
                 R.id.nav_account -> {
                     startActivity(Intent(this, AccountActivity::class.java))
                     false // false = tab Beranda tetap terpilih di halaman ini
