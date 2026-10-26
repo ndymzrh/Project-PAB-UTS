@@ -22,13 +22,11 @@ import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.widget.NestedScrollView
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.appbar.MaterialToolbar
-import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.chip.Chip
 import com.google.android.material.chip.ChipGroup
@@ -207,7 +205,6 @@ class PetugasPromoAdapter(private val onClick: (PromoItem) -> Unit) :
         val detail: TextView
     ) : RecyclerView.ViewHolder(v)
 
-    // Kartu dibuat lewat kode, jadi tidak perlu file layout item
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): VH {
         val ctx = parent.context
         fun dp(n: Int) = (n * ctx.resources.displayMetrics.density).toInt()
@@ -325,8 +322,6 @@ class PetugasPromoActivity : AppCompatActivity() {
         findViewById<MaterialButton>(R.id.fabTambah).setOnClickListener {
             startActivity(Intent(this, PetugasPromoTambahActivity::class.java))
         }
-
-        setupBottomNav()
     }
 
     // Otomatis ikut saat promo ditambah / dihapus
@@ -369,32 +364,6 @@ class PetugasPromoActivity : AppCompatActivity() {
         tvKosong.visibility = if (list.isEmpty()) View.VISIBLE else View.GONE
     }
 
-    private fun setupBottomNav() {
-        val bottomNav = findViewById<BottomNavigationView>(R.id.bottomNav)
-
-        bottomNav.selectedItemId = R.id.nav_promo // sebelum listener
-        bottomNav.setOnItemSelectedListener { item ->
-            when (item.itemId) {
-                R.id.nav_home -> {
-                    startActivity(
-                        Intent(this, HomeActivityPetugas::class.java)
-                            .addFlags(
-                                Intent.FLAG_ACTIVITY_CLEAR_TOP or
-                                        Intent.FLAG_ACTIVITY_SINGLE_TOP
-                            )
-                    )
-                    overridePendingTransition(0, 0)
-                    false
-                }
-                R.id.nav_bengkel -> { toast("Peta bengkel"); false }
-                R.id.nav_account -> { toast("Akun"); false }
-                else -> false
-            }
-        }
-        // Tap Promo lagi = kembali ke atas daftar
-        bottomNav.setOnItemReselectedListener { findViewById<NestedScrollView>(R.id.scrollPromo).smoothScrollTo(0, 0) }
-    }
-
     private fun toast(msg: String) = Toast.makeText(this, msg, Toast.LENGTH_SHORT).show()
 }
 class PetugasPromoDetailActivity : AppCompatActivity() {
@@ -403,7 +372,6 @@ class PetugasPromoDetailActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_detail_promo_petugas)
         findViewById<MaterialToolbar>(R.id.toolbar).setNavigationOnClickListener { finish() }
-        setupBottomNav()
 
         PromoStore.get(this, intent.getStringExtra(EXTRA_PROMO_ID).orEmpty()) { promo ->
             if (promo == null) {
@@ -439,32 +407,6 @@ class PetugasPromoDetailActivity : AppCompatActivity() {
                 }
                 .show()
         }
-    }
-
-    private fun setupBottomNav() {
-        val bottomNav = findViewById<BottomNavigationView>(R.id.bottomNav)
-
-        bottomNav.selectedItemId = R.id.nav_promo // sebelum listener
-        bottomNav.setOnItemSelectedListener { item ->
-            when (item.itemId) {
-                R.id.nav_home -> {
-                    startActivity(
-                        Intent(this, HomeActivityPetugas::class.java)
-                            .addFlags(
-                                Intent.FLAG_ACTIVITY_CLEAR_TOP or
-                                        Intent.FLAG_ACTIVITY_SINGLE_TOP
-                            )
-                    )
-                    overridePendingTransition(0, 0)
-                    false
-                }
-                R.id.nav_bengkel -> { toast("Peta bengkel"); false }
-                R.id.nav_account -> { toast("Akun"); false }
-                else -> false
-            }
-        }
-        // Tap Promo lagi = kembali ke daftar promo
-        bottomNav.setOnItemReselectedListener { finish() }
     }
 
     private fun toast(msg: String) = Toast.makeText(this, msg, Toast.LENGTH_SHORT).show()

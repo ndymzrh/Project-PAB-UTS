@@ -8,12 +8,16 @@
     android:orientation="vertical"
     tools:context=".PetugasPromoActivity">
 
-    <include
-        layout="@layout/include_top_bar"
+    <!-- ============ TOOLBAR DENGAN TOMBOL BACK ============ -->
+    <com.google.android.material.appbar.MaterialToolbar
+        android:id="@+id/toolbar"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:elevation="8dp"
-        android:translationZ="8dp" />
+        android:layout_height="?attr/actionBarSize"
+        android:background="@color/bk_primary"
+        app:navigationIcon="?attr/homeAsUpIndicator"
+        app:navigationIconTint="@android:color/white"
+        app:title="Kelola Promo"
+        app:titleTextColor="@android:color/white" />
 
     <androidx.core.widget.NestedScrollView
         android:id="@+id/scrollPromo"
@@ -101,7 +105,6 @@
                 </com.google.android.material.chip.ChipGroup>
             </HorizontalScrollView>
 
-
             <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/rvPromo"
                 android:layout_width="match_parent"
@@ -146,19 +149,5 @@
                 app:cornerRadius="24dp" />
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>
-
-    <com.google.android.material.bottomnavigation.BottomNavigationView
-        android:id="@+id/bottomNav"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_gravity="bottom"
-        android:background="@android:color/white"
-        app:elevation="12dp"
-        app:itemActiveIndicatorStyle="@null"
-        app:itemIconTint="@color/bk_nav_item_color"
-        app:itemTextColor="@color/bk_nav_item_color"
-        app:labelVisibilityMode="labeled"
-        app:menu="@menu/menu_bottom_nav_petugas" />
-
 
 </LinearLayout>
