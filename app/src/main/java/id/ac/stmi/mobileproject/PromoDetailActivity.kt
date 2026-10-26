@@ -1,22 +1,29 @@
 package id.ac.stmi.mobileproject
 
-import android.content.ClipData
-import android.content.ClipboardManager
-import android.content.Context
 import android.content.Intent
+import android.content.res.ColorStateList
+import android.graphics.Color
 import android.os.Bundle
 import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.google.android.material.button.MaterialButton
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 
 class PromoDetailActivity : AppCompatActivity() {
+
+    private lateinit var btnKlaim: MaterialButton
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_promo_detail)
+
+        // Tombol bawaan layout (id btnSalin, teks "Klaim"). Nonaktif dulu sampai status dicek.
+        btnKlaim = findViewById(R.id.btnKlaim)
+        aturTombol("Klaim", aktif = false)
 
         setupBottomNav()
 
@@ -42,11 +49,58 @@ class PromoDetailActivity : AppCompatActivity() {
             .mapIndexed { i, t -> "${i + 1}. $t" }
             .joinToString("\n")
 
-        findViewById<MaterialButton>(R.id.btnSalin).setOnClickListener {
-            val cm = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-            cm.setPrimaryClip(ClipData.newPlainText("Kode promo", promo.kode))
-            toast("Kode ${promo.kode} disalin")
+        // Promo berakhir / sudah diklaim = tombol nonaktif
+        if (promo.berakhir < System.currentTimeMillis()) {
+            aturTombol("Berakhir", aktif = false)
+        } else {
+            VoucherStore.cekDiklaim(this, promo.id) { sudah ->
+                if (sudah) aturTombol("Sudah diklaim", aktif = false)
+                else aturTombol("Klaim", aktif = true)
+            }
         }
+
+        btnKlaim.setOnClickListener {
+            MaterialAlertDialogBuilder(this)
+                .setTitle("Klaim promo ini?")
+                .setMessage("\"${promo.judul}\" akan masuk ke Voucher saya.")
+                .setNegativeButton("Batal", null)
+                .setPositiveButton("Klaim") { _, _ -> klaim(promo) }
+                .show()
+        }
+    }
+
+    private fun klaim(promo: PromoItem) {
+        aturTombol("Memproses...", aktif = false) // cegah tap ganda
+        VoucherStore.klaim(this, promo) { hasil ->
+            when (hasil) {
+                VoucherStore.Hasil.SUKSES -> {
+                    toast("Promo masuk ke Voucher saya")
+                    finish() // promo sudah hilang dari daftar Home
+                }
+                VoucherStore.Hasil.SUDAH_DIKLAIM -> {
+                    toast("Promo sudah diklaim")
+                    finish()
+                }
+                VoucherStore.Hasil.BERAKHIR -> {
+                    toast("Promo sudah berakhir")
+                    aturTombol("Berakhir", aktif = false)
+                }
+                VoucherStore.Hasil.GAGAL -> {
+                    toast("Gagal mengklaim, periksa koneksi")
+                    aturTombol("Klaim", aktif = true)
+                }
+            }
+        }
+    }
+
+    /** Oranye saat aktif, abu-abu saat nonaktif. */
+    private fun aturTombol(teks: String, aktif: Boolean) {
+        btnKlaim.text = teks
+        btnKlaim.isEnabled = aktif
+        btnKlaim.backgroundTintList = ColorStateList.valueOf(
+            if (aktif) ContextCompat.getColor(this, R.color.bk_accent) else Color.parseColor("#C5CBD3")
+        )
+        btnKlaim.setTextColor(if (aktif) Color.WHITE else Color.parseColor("#6B7280"))
     }
 
     private fun setupBottomNav() {

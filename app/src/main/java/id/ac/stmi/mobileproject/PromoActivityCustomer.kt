@@ -50,6 +50,7 @@ class PromoActivityCustomer : AppCompatActivity() {
         siapkanDaftar()
         setupCategoryChips()
         setupBottomNav()
+        setupKartuPoinVoucher()
 
         listenPoints(uid)
         listenVouchers(uid)
@@ -150,6 +151,23 @@ class PromoActivityCustomer : AppCompatActivity() {
         chip.chipBackgroundColor =
             ColorStateList.valueOf(if (selected) primary else Color.WHITE)
         chip.setTextColor(if (selected) Color.WHITE else primary)
+    }
+
+    // ============ TAUTAN POIN & VOUCHER ============
+
+    private fun setupKartuPoinVoucher() {
+        // Kartu = induk dari angka (MaterialCardView / layout pembungkus)
+        val kartuPoin = binding.tvPoinSaya.parent.parent as View
+        val kartuVoucher = binding.tvVoucherSaya.parent.parent as View
+
+        kartuPoin.isClickable = true
+        kartuPoin.setOnClickListener {
+            startActivity(Intent(this, RiwayatPoinCustActivity::class.java))
+        }
+        kartuVoucher.isClickable = true
+        kartuVoucher.setOnClickListener {
+            startActivity(Intent(this, VoucherSayaActivity::class.java))
+        }
     }
 
     // ============ BOTTOM NAV ============
