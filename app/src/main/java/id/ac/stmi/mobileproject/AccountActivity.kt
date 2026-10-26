@@ -204,7 +204,8 @@ class AccountActivity : AppCompatActivity() {
         binding.btnAddCar.setOnClickListener {
             startActivity(Intent(this, AddVehicleActivityCustomer::class.java))
         }
-        binding.btnManageCar.setOnClickListener { toast("Kelola mobil") }
+        binding.btnManageCar.setOnClickListener { startActivity(Intent(this,
+            MyVehiclesActivityCustomer::class.java)) }
         binding.btnBookService.setOnClickListener { toast("Booking servis") }
         binding.fabBooking.setOnClickListener { toast("Buat booking baru") }
         binding.btnLogout.setOnClickListener { confirmLogout() }
