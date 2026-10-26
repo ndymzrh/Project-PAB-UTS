@@ -127,6 +127,9 @@
             android:name=".VoucherSayaActivity"
             android:exported="false"
             android:windowSoftInputMode="adjustResize" />
+        <activity
+            android:name=".EditProfileActivity"
+            android:exported="false" />
     </application>
 
 </manifest>

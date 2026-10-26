@@ -197,7 +197,9 @@ class AccountActivity : AppCompatActivity() {
     // 5. KLIK TOMBOL
     // ------------------------------------------------------------------
     private fun setupClicks() {
-        binding.btnEditProfile.setOnClickListener { toast("Edit profil") }
+        binding.btnEditProfile.setOnClickListener {
+            startActivity(Intent(this, EditProfileActivity::class.java))
+        }
         binding.btnTrackService.setOnClickListener { toast("Pantau servis") }
         binding.btnAddCar.setOnClickListener {
             startActivity(Intent(this, AddVehicleActivityCustomer::class.java))
