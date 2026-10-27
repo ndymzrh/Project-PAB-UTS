@@ -157,7 +157,7 @@ class AccountActivity : AppCompatActivity() {
         // --- Layanan & Akun ---
         bindMenu(binding.menuHistory, R.drawable.ic_receipt,
             R.string.menu_riwayat_title, R.string.menu_riwayat_sub) {
-            toast("Riwayat booking & servis")
+            startActivity(Intent(this, RiwayatBookingActivityCustomer::class.java))
         }
         bindMenu(binding.menuAddress, R.drawable.ic_location,
             R.string.menu_alamat_title, R.string.menu_alamat_sub) {
@@ -228,8 +228,12 @@ class AccountActivity : AppCompatActivity() {
         }
         binding.btnManageCar.setOnClickListener { startActivity(Intent(this,
             MyVehiclesActivityCustomer::class.java)) }
-        binding.btnBookService.setOnClickListener { toast("Booking servis") }
-        binding.fabBooking.setOnClickListener { toast("Buat booking baru") }
+        binding.btnBookService.setOnClickListener {
+            startActivity(Intent(this, LayananActivity::class.java))
+        }
+        binding.fabBooking.setOnClickListener {
+            startActivity(Intent(this, LayananActivity::class.java))
+        }
         binding.btnLogout.setOnClickListener { confirmLogout() }
     }
 

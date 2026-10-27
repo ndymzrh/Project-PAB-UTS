@@ -33,7 +33,9 @@ class HomeActivityCustomer : AppCompatActivity() {
     private var currentVehicle: Vehicle? = null
     private var userReg: ListenerRegistration? = null
     private var vehiclesReg: ListenerRegistration? = null
+    private var bookingsReg: ListenerRegistration? = null
     private var promoListener: PromoListener? = null
+    private var activeBookingId: String? = null
     private val idFormat = NumberFormat.getIntegerInstance(Locale("id", "ID"))
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -58,12 +60,14 @@ class HomeActivityCustomer : AppCompatActivity() {
             onLogout = {
                 userReg?.remove()
                 vehiclesReg?.remove()
+                bookingsReg?.remove()
                 userReg = null
                 vehiclesReg = null
+                bookingsReg = null
                 confirmLogout()
             }
         )
-        showActiveBooking(null, null, null)
+        showActiveBooking(null)
 
         // Isi promo contoh sekali saja bila belum ada
         PromoStore.seedSekali(this)
@@ -92,6 +96,7 @@ class HomeActivityCustomer : AppCompatActivity() {
         val uid = auth.currentUser?.uid ?: return
         userReg = listenUser(uid)
         vehiclesReg = listenVehicles(uid)
+        bookingsReg = listenBookings(uid)
     }
 
     override fun onStop() {
@@ -100,8 +105,10 @@ class HomeActivityCustomer : AppCompatActivity() {
         promoListener = null
         userReg?.remove()
         vehiclesReg?.remove()
+        bookingsReg?.remove()
         userReg = null
         vehiclesReg = null
+        bookingsReg = null
     }
 
     /** Promo dari PromoStore (data yang sama dengan yang dibuat petugas) */
@@ -208,14 +215,31 @@ class HomeActivityCustomer : AppCompatActivity() {
             "${idFormat.format(used)}/${idFormat.format(interval)} km"
     }
 
-    private fun showActiveBooking(title: String?, schedule: String?, status: String?) {
-        val ada = title != null
+    private fun listenBookings(uid: String): ListenerRegistration =
+        BookingRepository.listenCustomerBookings(
+            uid = uid,
+            onResult = { bookings ->
+                val active = bookings.firstOrNull {
+                    it.status in setOf(
+                        BookingStatus.MENUNGGU_KONFIRMASI,
+                        BookingStatus.DIKONFIRMASI,
+                        BookingStatus.SEDANG_DISERVIS
+                    )
+                }
+                showActiveBooking(active)
+            },
+            onError = { toast("Gagal memuat booking") }
+        )
+
+    private fun showActiveBooking(booking: BookingRecord?) {
+        val ada = booking != null
         binding.tvBookingHeader.visibility = if (ada) View.VISIBLE else View.GONE
         binding.cardActiveBooking.visibility = if (ada) View.VISIBLE else View.GONE
-        if (ada) {
-            binding.tvBookingTitle.text = title
-            binding.tvBookingSchedule.text = schedule
-            binding.tvBookingStatus.text = status
+        activeBookingId = booking?.id
+        if (booking != null) {
+            binding.tvBookingTitle.text = booking.serviceNames.ifBlank { "Booking servis" }
+            binding.tvBookingSchedule.text = "${booking.workshopName} - ${booking.scheduleText}"
+            binding.tvBookingStatus.text = booking.status.label
         }
     }
 
@@ -224,7 +248,9 @@ class HomeActivityCustomer : AppCompatActivity() {
             startActivity(Intent(this, MyVehiclesActivityCustomer::class.java))
         }
 
-        binding.menuBooking.setOnClickListener { toast("Booking servis") }
+        binding.menuBooking.setOnClickListener {
+            startActivity(Intent(this, BookingListActivityCustomer::class.java))
+        }
         binding.menuLayanan.setOnClickListener {
             startActivity(Intent(this, LayananActivity::class.java))
         }
@@ -232,9 +258,20 @@ class HomeActivityCustomer : AppCompatActivity() {
             startActivity(Intent(this,
             BengkelListActivityCustomer::class.java))
         }
-        binding.menuRiwayat.setOnClickListener { toast("Riwayat servis") }
-        binding.cardActiveBooking.setOnClickListener { toast("Detail booking") }
-        binding.fabBooking.setOnClickListener { toast("Buat booking baru") }
+        binding.menuRiwayat.setOnClickListener {
+            startActivity(Intent(this, RiwayatBookingActivityCustomer::class.java))
+        }
+        binding.cardActiveBooking.setOnClickListener {
+            activeBookingId?.let { bookingId ->
+                startActivity(
+                    Intent(this, BookingSuccessActivity::class.java)
+                        .putExtra(BookingSuccessActivity.EXTRA_BOOKING_ID, bookingId)
+                )
+            }
+        }
+        binding.fabBooking.setOnClickListener {
+            startActivity(Intent(this, LayananActivity::class.java))
+        }
 
         binding.bottomNav.selectedItemId = R.id.nav_home
         binding.bottomNav.setOnItemSelectedListener { item ->

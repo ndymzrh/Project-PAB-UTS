@@ -12,6 +12,10 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.updatePadding
 import androidx.core.widget.doAfterTextChanged
 import com.google.android.material.button.MaterialButton
 import com.google.firebase.auth.FirebaseAuth
@@ -55,7 +59,18 @@ class LayananActivity : AppCompatActivity() {
         binding = ActivityLayananBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        applySystemBarInsets(binding.main) // dari TopBarHelper.kt
+        // Status bar transparan dengan ikon putih di atas header biru tua
+        WindowCompat.getInsetsController(window, window.decorView)
+            .isAppearanceLightStatusBars = false
+
+        val atasAwal = binding.header.paddingTop
+        val bawahAwal = binding.main.paddingBottom
+        ViewCompat.setOnApplyWindowInsetsListener(binding.main) { _, insets ->
+            val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+            binding.header.updatePadding(top = atasAwal + bars.top)
+            binding.main.updatePadding(bottom = bawahAwal + bars.bottom)
+            insets
+        }
 
         // Belum login -> ke halaman login
         val uid = auth.currentUser?.uid
@@ -68,17 +83,17 @@ class LayananActivity : AppCompatActivity() {
             return
         }
 
-        setupTopBar(showNotificationDot = true)
         setupKendaraan(uid)
         setupCari()
         setupChip()
         setupKlik()
-        setupBottomNav()
 
         // Sembunyikan "Layanan tidak ditemukan" sampai data Firestore selesai dimuat
         binding.tvKosong.visibility = View.GONE
         perbaruiBar()
         setupLayanan()
+
+        binding.btnBack.setOnClickListener { finish() }
     }
 
     // ------------------------------------------------------------------
@@ -291,47 +306,21 @@ class LayananActivity : AppCompatActivity() {
         }
         binding.btnFilter.setOnClickListener { toast("Filter lanjutan belum tersedia") }
         binding.btnNext.setOnClickListener {
-            // TODO: ganti dengan halaman pilih jadwal kalau sudah dibuat
-            toast("${dipilih.size} layanan dipilih. Halaman jadwal belum dibuat.")
-        }
-        // Tombol Booking tengah: kembali ke atas daftar
-        binding.fabBooking.setOnClickListener { binding.scrollLayanan.smoothScrollTo(0, 0) }
-    }
-
-    // ------------------------------------------------------------------
-    // 7. BOTTOM NAVIGATION
-    // ------------------------------------------------------------------
-    private fun setupBottomNav() {
-        binding.bottomNav.selectedItemId = R.id.nav_booking // sebelum listener
-
-        binding.bottomNav.setOnItemSelectedListener { item ->
-            when (item.itemId) {
-                R.id.nav_booking -> true
-                R.id.nav_home -> {
-                    startActivity(
-                        Intent(this, HomeActivityCustomer::class.java)
-                            .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
-                    )
-                    overridePendingTransition(0, 0)
-                    false
-                }
-                R.id.nav_promo -> {
-                    startActivity(
-                        Intent(this, PromoActivityCustomer::class.java)
-                            .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
-                    )
-                    overridePendingTransition(0, 0)
-                    false
-                }
-                R.id.nav_bengkel -> { toast("Peta bengkel"); false }
-                R.id.nav_account -> {
-                    startActivity(Intent(this, AccountActivity::class.java))
-                    false
-                }
-                else -> false
+            if (dipilih.isEmpty()) {
+                toast("Pilih minimal satu layanan")
+                return@setOnClickListener
             }
+            startActivity(
+                Intent(this, BookingActivityCustomer::class.java)
+                    .putStringArrayListExtra(
+                        BookingActivityCustomer.EXTRA_SERVICE_IDS,
+                        ArrayList(dipilih)
+                    )
+            )
         }
     }
+
+
 
     private fun toast(msg: String) =
         Toast.makeText(this, msg, Toast.LENGTH_SHORT).show()
