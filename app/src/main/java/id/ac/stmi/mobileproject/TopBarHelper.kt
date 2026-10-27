@@ -20,9 +20,9 @@ fun Activity.setupTopBar(
     onSupport: () -> Unit = { toastTopBar("Bantuan") },
     onNotification: () -> Unit = { toastTopBar("Notifikasi") },
     onLogout: () -> Unit = { confirmLogout() }
-): BadgeDrawable {
+): BadgeDrawable? {
 
-    val toolbar = findViewById<MaterialToolbar>(R.id.topBar)
+    val toolbar = findViewById<MaterialToolbar>(R.id.topBar) ?: return null
 
     toolbar.setOnMenuItemClickListener { item ->
         when (item.itemId) {
@@ -68,7 +68,8 @@ private fun Activity.performLogout() {
 }
 
 fun Activity.applySystemBarInsets(root: View) {
-    val appBar = findViewById<View>(R.id.topBar).parent as View
+    val topBarView = findViewById<View>(R.id.topBar)
+    val appBar = topBarView?.parent as? View ?: root
 
     WindowCompat.getInsetsController(window, window.decorView)
         .isAppearanceLightStatusBars = true

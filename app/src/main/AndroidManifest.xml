@@ -155,6 +155,26 @@
             android:name=".BengkelListActivityCustomer"
             android:exported="false"
             android:windowSoftInputMode="adjustResize" />
+        <activity
+            android:name=".BookingListActivityCustomer"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
+        <activity
+            android:name=".RiwayatBookingActivityCustomer"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
+        <activity
+            android:name=".BookingPetugasActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
+        <activity
+            android:name=".BookingActivityCustomer"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
+        <activity
+            android:name=".BookingSuccessActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
     </application>
 
 </manifest>

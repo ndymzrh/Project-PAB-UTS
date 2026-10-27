@@ -1,0 +1,298 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/main"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/bk_bg_screen"
+    android:orientation="vertical">
+
+    <com.google.android.material.appbar.MaterialToolbar
+        android:id="@+id/toolbar"
+        android:layout_width="match_parent"
+        android:layout_height="?attr/actionBarSize"
+        android:background="@android:color/white"
+        app:navigationIcon="?attr/homeAsUpIndicator"
+        app:title="Booking Service"
+        app:titleTextColor="@color/bk_primary" />
+
+    <androidx.core.widget.NestedScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:clipToPadding="false"
+        android:paddingBottom="24dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="1. Kendaraan"
+                android:textColor="@color/bk_text_primary"
+                android:textSize="16sp"
+                android:textStyle="bold" />
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:hint="Pilih kendaraan"
+                app:endIconMode="dropdown_menu"
+                app:boxBackgroundMode="outline">
+
+                <com.google.android.material.textfield.MaterialAutoCompleteTextView
+                    android:id="@+id/actVehicle"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="none"
+                    android:paddingStart="12dp"
+                    android:paddingEnd="12dp" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <LinearLayout
+                android:id="@+id/layoutNoVehicle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:background="@drawable/bg_input_field"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:padding="12dp"
+                android:visibility="gone">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Belum ada kendaraan terdaftar"
+                    android:textColor="@color/bk_text_secondary" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnAddVehicle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Tambah"
+                    android:textAllCaps="false"
+                    app:backgroundTint="@color/bk_accent"
+                    app:cornerRadius="12dp" />
+            </LinearLayout>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="20dp"
+                android:text="2. Layanan dipilih"
+                android:textColor="@color/bk_text_primary"
+                android:textSize="16sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/tvServiceSummary"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:background="@drawable/bg_input_field"
+                android:lineSpacingExtra="4dp"
+                android:padding="14dp"
+                android:textColor="@color/bk_text_primary"
+                android:textSize="14sp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="20dp"
+                android:text="3. Bengkel dan jadwal"
+                android:textColor="@color/bk_text_primary"
+                android:textSize="16sp"
+                android:textStyle="bold" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnChooseWorkshop"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:gravity="start|center_vertical"
+                android:text="Pilih bengkel"
+                android:textAllCaps="false"
+                android:textColor="@color/bk_primary"
+                app:backgroundTint="@android:color/white"
+                app:cornerRadius="12dp"
+                app:strokeColor="@color/bk_stroke_soft"
+                app:strokeWidth="1dp" />
+
+            <TextView
+                android:id="@+id/tvWorkshop"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:text="Belum memilih bengkel"
+                android:textColor="@color/bk_text_secondary"
+                android:textSize="13sp" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:orientation="horizontal">
+
+                <com.google.android.material.textfield.TextInputLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginEnd="6dp"
+                    android:layout_weight="1"
+                    android:hint="Tanggal"
+                    app:boxBackgroundMode="outline">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/etDate"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:focusable="false"
+                        android:inputType="none" />
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <com.google.android.material.textfield.TextInputLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="6dp"
+                    android:layout_weight="1"
+                    android:hint="Jam"
+                    app:boxBackgroundMode="outline">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/etTime"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:focusable="false"
+                        android:inputType="none" />
+                </com.google.android.material.textfield.TextInputLayout>
+            </LinearLayout>
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:hint="Voucher (opsional)"
+                app:endIconMode="dropdown_menu"
+                app:boxBackgroundMode="outline">
+
+                <com.google.android.material.textfield.MaterialAutoCompleteTextView
+                    android:id="@+id/actVoucher"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="none"
+                    android:paddingStart="12dp"
+                    android:paddingEnd="12dp" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:hint="Catatan tambahan (opsional)"
+                app:boxBackgroundMode="outline">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etNotes"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="top"
+                    android:inputType="textCapSentences|textMultiLine"
+                    android:minLines="3" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="20dp"
+                app:cardBackgroundColor="@android:color/white"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="0dp"
+                app:strokeColor="@color/bk_stroke_soft"
+                app:strokeWidth="1dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Ringkasan biaya"
+                        android:textColor="@color/bk_text_primary"
+                        android:textSize="16sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/tvSubtotal"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:text="Subtotal: Rp 0"
+                        android:textColor="@color/bk_text_secondary" />
+
+                    <TextView
+                        android:id="@+id/tvDiscount"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:text="Diskon: - Rp 0"
+                        android:textColor="@color/bk_primary" />
+
+                    <TextView
+                        android:id="@+id/tvTotal"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:text="Rp 0"
+                        android:textColor="@color/bk_primary"
+                        android:textSize="20sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/tvEstimatedPoints"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:text="0 points"
+                        android:textColor="@color/bk_accent"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:text="Points masih estimasi dan diberikan setelah servis selesai."
+                        android:textColor="@color/bk_text_secondary"
+                        android:textSize="12sp" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <ProgressBar
+                android:id="@+id/progress"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:layout_marginTop="16dp"
+                android:visibility="gone" />
+        </LinearLayout>
+    </androidx.core.widget.NestedScrollView>
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btnConfirm"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_margin="16dp"
+        android:text="Konfirmasi booking"
+        android:textAllCaps="false"
+        android:textColor="@android:color/white"
+        app:backgroundTint="@color/bk_accent"
+        app:cornerRadius="14dp" />
+</LinearLayout>

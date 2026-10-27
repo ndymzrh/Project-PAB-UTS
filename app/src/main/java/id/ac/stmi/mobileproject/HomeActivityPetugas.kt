@@ -4,18 +4,28 @@ import android.content.Intent
 import android.os.Bundle
 import android.view.View
 import android.widget.Toast
+import androidx.core.view.isVisible
+import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.ListenerRegistration
 import id.ac.stmi.mobileproject.databinding.ActivityHomePetugasBinding
-import kotlin.jvm.java
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Locale
 
 class HomeActivityPetugas : AppCompatActivity() {
 
     private lateinit var binding: ActivityHomePetugasBinding
     private val auth by lazy { FirebaseAuth.getInstance() }
     private val db by lazy { FirebaseFirestore.getInstance() }
+    private var bookingListener: ListenerRegistration? = null
+    private val bookingAdapter by lazy {
+        BookingPetugasAdapter(allowStatusUpdate = false) { _, _ -> }
+    }
+    private val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.US)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -24,6 +34,8 @@ class HomeActivityPetugas : AppCompatActivity() {
         setContentView(binding.root)
 
         applySystemBarInsets(binding.main)
+        binding.rvBooking.layoutManager = LinearLayoutManager(this)
+        binding.rvBooking.adapter = bookingAdapter
 
         val uid = auth.currentUser?.uid
         if (uid == null) {
@@ -39,6 +51,67 @@ class HomeActivityPetugas : AppCompatActivity() {
         loadStaff(uid)
     }
 
+    override fun onStart() {
+        super.onStart()
+        listenBookings()
+    }
+
+    override fun onStop() {
+        bookingListener?.remove()
+        bookingListener = null
+        super.onStop()
+    }
+
+    private fun listenBookings() {
+        bookingListener?.remove()
+        bookingListener = BookingRepository.listenAllBookings(
+            onResult = { bookings -> renderBookings(bookings) },
+            onError = { toast("Gagal memuat booking") }
+        )
+    }
+
+    private fun renderBookings(bookings: List<BookingRecord>) {
+        val today = dateFormat.format(System.currentTimeMillis())
+        val now = Calendar.getInstance()
+        val activeStatuses = setOf(
+            BookingStatus.MENUNGGU_KONFIRMASI,
+            BookingStatus.DIKONFIRMASI,
+            BookingStatus.SEDANG_DISERVIS
+        )
+        val todayBookings = bookings.count { it.bookingDate == today }
+        val waiting = bookings.count { it.status == BookingStatus.MENUNGGU_KONFIRMASI }
+        val running = bookings.count { it.status == BookingStatus.SEDANG_DISERVIS }
+        val completedToday = bookings.count {
+            it.status == BookingStatus.SELESAI &&
+                (it.completedAt?.let { timestamp -> dateFormat.format(timestamp.toDate()) == today }
+                    ?: (it.bookingDate == today))
+        }
+        val monthlyRevenue = bookings
+            .filter { it.status == BookingStatus.SELESAI }
+            .filter { booking ->
+                val completedAt = booking.completedAt
+                if (completedAt != null) {
+                    val completed = Calendar.getInstance().apply { time = completedAt.toDate() }
+                    completed.get(Calendar.YEAR) == now.get(Calendar.YEAR) &&
+                        completed.get(Calendar.MONTH) == now.get(Calendar.MONTH)
+                } else {
+                    booking.bookingDate.startsWith(today.substring(0, 7))
+                }
+            }
+            .sumOf { it.totalPrice }
+
+        binding.tvStatBookingHariIni.text = todayBookings.toString()
+        binding.tvStatMenunggu.text = waiting.toString()
+        binding.tvStatBerjalan.text = running.toString()
+        binding.tvStatSelesai.text = completedToday.toString()
+        binding.tvPendapatan.text = "${monthlyRevenue.keRupiah()} bulan ini"
+
+        val preview = bookings.filter { it.status in activeStatuses }.take(3)
+        bookingAdapter.submitList(preview)
+        binding.tvNoBooking.isVisible = preview.isEmpty()
+        binding.rvBooking.isVisible = preview.isNotEmpty()
+    }
+
     private fun loadStaff(uid: String) {
         db.collection("users").document(uid).get().addOnSuccessListener { doc ->
             val isPemilik = doc.getString("role") == "pemilik"
@@ -50,7 +123,7 @@ class HomeActivityPetugas : AppCompatActivity() {
 
     private fun setupClicks() {
         // Menu cepat
-        binding.menuBooking.setOnClickListener { toast("Kelola booking") }
+        binding.menuBooking.setOnClickListener { startActivity(Intent(this, BookingPetugasActivity::class.java)) }
         binding.menuServis.setOnClickListener { toast("Kelola servis") }
         binding.menuTeknisi.setOnClickListener { toast("Kelola teknisi") }
         binding.menuPelanggan.setOnClickListener {
@@ -63,13 +136,13 @@ class HomeActivityPetugas : AppCompatActivity() {
             startActivity(Intent(this, SemuaMenuActivityPetugas::class.java))
         }
         // "Lihat semua" di samping judul Booking Masuk
-        binding.btnLihatSemua.setOnClickListener { toast("Semua booking masuk") }
+        binding.btnLihatSemua.setOnClickListener { startActivity(Intent(this, BookingPetugasActivity::class.java)) }
 
         binding.bottomNav.selectedItemId = R.id.nav_home
         binding.bottomNav.setOnItemSelectedListener { item ->
             when (item.itemId) {
                 R.id.nav_home -> true
-                R.id.nav_booking -> { toast("Booking"); false }
+                R.id.nav_booking -> { startActivity(Intent(this, BookingPetugasActivity::class.java)); false }
                 R.id.nav_servis -> { toast("Servis"); false }
                 R.id.nav_account -> { toast("Akun"); false }
                 else -> false
