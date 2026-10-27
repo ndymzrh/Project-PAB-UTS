@@ -7,6 +7,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.location.Location
+import android.location.LocationListener
 import android.location.LocationManager
 import android.net.Uri
 import androidx.core.content.ContextCompat
@@ -113,6 +114,45 @@ object LokasiHelper {
                 ctx.mainLooper
             )
         }
+    }
+
+    /**
+     * Berlangganan pembaruan lokasi secara realtime.
+     * Mengembalikan LocationListener agar pemanggil dapat menghentikannya dengan stopPantau(ctx, listener).
+     */
+    @SuppressLint("MissingPermission")
+    fun pantau(
+        ctx: Context,
+        minWaktuMs: Long = 2000L,
+        minJarakMeter: Float = 1f,
+        onUpdate: (Location) -> Unit
+    ): LocationListener? {
+        if (!punyaIzin(ctx)) return null
+        val lm = ctx.getSystemService(Context.LOCATION_SERVICE) as LocationManager
+        val aktif = lm.getProviders(true)
+        if (aktif.isEmpty()) return null
+
+        val listener = LocationListener { loc -> onUpdate(loc) }
+        for (provider in listOf(LocationManager.GPS_PROVIDER, LocationManager.NETWORK_PROVIDER)) {
+            if (provider in aktif) {
+                runCatching {
+                    lm.requestLocationUpdates(
+                        provider,
+                        minWaktuMs,
+                        minJarakMeter,
+                        listener,
+                        ctx.mainLooper
+                    )
+                }
+            }
+        }
+        return listener
+    }
+
+    fun stopPantau(ctx: Context, listener: LocationListener?) {
+        if (listener == null) return
+        val lm = ctx.getSystemService(Context.LOCATION_SERVICE) as LocationManager
+        runCatching { lm.removeUpdates(listener) }
     }
 }
 

@@ -147,6 +147,10 @@
             android:name=".BengkelFormActivityPetugas"
             android:exported="false"
             android:windowSoftInputMode="adjustResize" />
+        <activity
+            android:name=".BengkelListActivityCustomer"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
     </application>
 
 </manifest>

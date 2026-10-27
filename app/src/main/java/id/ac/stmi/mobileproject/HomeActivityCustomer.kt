@@ -228,7 +228,10 @@ class HomeActivityCustomer : AppCompatActivity() {
         binding.menuLayanan.setOnClickListener {
             startActivity(Intent(this, LayananActivity::class.java))
         }
-        binding.menuBengkel.setOnClickListener { toast("Lokasi bengkel") }
+        binding.menuBengkel.setOnClickListener {
+            startActivity(Intent(this,
+            BengkelListActivityCustomer::class.java))
+        }
         binding.menuRiwayat.setOnClickListener { toast("Riwayat servis") }
         binding.cardActiveBooking.setOnClickListener { toast("Detail booking") }
         binding.fabBooking.setOnClickListener { toast("Buat booking baru") }

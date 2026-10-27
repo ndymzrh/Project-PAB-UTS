@@ -2,6 +2,7 @@ package id.ac.stmi.mobileproject
 
 import android.content.Intent
 import android.location.Location
+import android.location.LocationListener
 import android.os.Bundle
 import android.view.View
 import android.widget.Toast
@@ -59,12 +60,17 @@ class BengkelActivityCustomer : AppCompatActivity() {
     private var tampil: List<Bengkel> = emptyList()
     private var lokasiSaya: Location? = null
     private var sudahFitAwal = false
+    private var locationListener: LocationListener? = null
 
     private val izinLokasi = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
     ) { hasil ->
-        if (hasil.values.any { it }) cariLokasiSaya(pusatkan = true)
-        else toast("Izin lokasi ditolak, jarak ke bengkel tidak bisa ditampilkan")
+        if (hasil.values.any { it }) {
+            cariLokasiSaya(pusatkan = true)
+            mulaiPantauLokasi()
+        } else {
+            toast("Izin lokasi ditolak, jarak ke bengkel tidak bisa ditampilkan")
+        }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -247,17 +253,35 @@ class BengkelActivityCustomer : AppCompatActivity() {
         )
     }
 
+    private fun mulaiPantauLokasi() {
+        if (locationListener != null) return
+        locationListener = LokasiHelper.pantau(this) { loc ->
+            lokasiSaya = loc
+            terapkanFilter(fit = false)
+        }
+    }
+
+    private fun hentikanPantauLokasi() {
+        LokasiHelper.stopPantau(this, locationListener)
+        locationListener = null
+    }
+
     override fun onResume() {
         super.onResume()
         binding.map.onResume()
+        if (LokasiHelper.punyaIzin(this)) {
+            mulaiPantauLokasi()
+        }
     }
 
     override fun onPause() {
+        hentikanPantauLokasi()
         binding.map.onPause()
         super.onPause()
     }
 
     override fun onDestroy() {
+        hentikanPantauLokasi()
         listener?.remove()
         binding.map.onDetach()
         super.onDestroy()
