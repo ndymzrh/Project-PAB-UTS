@@ -1,3 +1,4 @@
+
 package id.ac.stmi.mobileproject
 
 import android.content.Intent
@@ -16,121 +17,210 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder
 class PromoDetailActivity : AppCompatActivity() {
 
     private lateinit var btnKlaim: MaterialButton
+    private var promoSaatIni: PromoItem? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_promo_detail)
 
-        // Tombol bawaan layout (id btnSalin, teks "Klaim"). Nonaktif dulu sampai status dicek.
         btnKlaim = findViewById(R.id.btnKlaim)
-        aturTombol("Klaim", aktif = false)
+        aturTombol("Memeriksa...", aktif = false)
 
         setupBottomNav()
 
-        // Data dari PromoStore, sama dengan yang diisi petugas
-        PromoStore.get(this, intent.getStringExtra(EXTRA_PROMO_ID).orEmpty()) { promo ->
+        val promoId = intent.getStringExtra(EXTRA_PROMO_ID)
+
+        if (promoId.isNullOrBlank()) {
+            toast("ID promo tidak ditemukan")
+            finish()
+            return
+        }
+
+        PromoStore.get(this, promoId) { promo ->
+            if (isFinishing || isDestroyed) return@get
+
             if (promo == null) {
                 toast("Promo tidak ditemukan")
                 finish()
             } else {
+                promoSaatIni = promo
                 tampilkan(promo)
             }
         }
     }
 
     private fun tampilkan(promo: PromoItem) {
-        findViewById<ImageView>(R.id.imgBanner).setImageResource(drawableId(promo.gambar))
-        findViewById<TextView>(R.id.tvPromoJudul).text = promo.judul
+        findViewById<ImageView>(R.id.imgBanner)
+            .setImageResource(drawableId(promo.gambar))
+
+        findViewById<TextView>(R.id.tvPromoJudul).text =
+            promo.judul
+
         findViewById<TextView>(R.id.tvPromoMeta).text =
             "Berlaku s/d ${promo.berakhir.toTanggal()} · ${promo.kategori.label}"
-        findViewById<TextView>(R.id.tvKodePromo).text = promo.kode
-        findViewById<TextView>(R.id.tvSyarat).text = promo.syarat.lines()
-            .filter { it.isNotBlank() }
-            .mapIndexed { i, t -> "${i + 1}. $t" }
-            .joinToString("\n")
 
-        // Promo berakhir / sudah diklaim = tombol nonaktif
-        if (promo.berakhir < System.currentTimeMillis()) {
-            aturTombol("Berakhir", aktif = false)
-        } else {
-            VoucherStore.cekDiklaim(this, promo.id) { sudah ->
-                if (sudah) aturTombol("Sudah diklaim", aktif = false)
-                else aturTombol("Klaim", aktif = true)
-            }
-        }
+        findViewById<TextView>(R.id.tvKodePromo).text =
+            promo.kode
+
+        findViewById<TextView>(R.id.tvSyarat).text =
+            promo.syarat.lines()
+                .filter { it.isNotBlank() }
+                .mapIndexed { index, syarat ->
+                    "${index + 1}. $syarat"
+                }
+                .joinToString("\n")
+
+        periksaStatusKlaim(promo)
 
         btnKlaim.setOnClickListener {
+            if (promo.berakhir < System.currentTimeMillis()) {
+                aturTombol("Berakhir", aktif = false)
+                toast("Promo sudah berakhir")
+                return@setOnClickListener
+            }
+
             MaterialAlertDialogBuilder(this)
                 .setTitle("Klaim promo ini?")
-                .setMessage("\"${promo.judul}\" akan masuk ke Voucher saya.")
+                .setMessage(
+                    "\"${promo.judul}\" akan masuk ke Voucher Saya."
+                )
                 .setNegativeButton("Batal", null)
-                .setPositiveButton("Klaim") { _, _ -> klaim(promo) }
+                .setPositiveButton("Klaim") { _, _ ->
+                    prosesKlaim(promo)
+                }
                 .show()
         }
     }
 
-    private fun klaim(promo: PromoItem) {
-        aturTombol("Memproses...", aktif = false) // cegah tap ganda
+    private fun periksaStatusKlaim(promo: PromoItem) {
+        if (promo.berakhir < System.currentTimeMillis()) {
+            aturTombol("Berakhir", aktif = false)
+            return
+        }
+
+        aturTombol("Memeriksa...", aktif = false)
+
+        VoucherStore.cekDiklaim(this, promo.id) { sudah ->
+            if (isFinishing || isDestroyed) return@cekDiklaim
+
+            if (sudah) {
+                aturTombol("Sudah diklaim", aktif = false)
+            } else {
+                aturTombol("Klaim", aktif = true)
+            }
+        }
+    }
+
+    private fun prosesKlaim(promo: PromoItem) {
+        aturTombol("Memproses...", aktif = false)
+
         VoucherStore.klaim(this, promo) { hasil ->
+            if (isFinishing || isDestroyed) return@klaim
+
             when (hasil) {
                 VoucherStore.Hasil.SUKSES -> {
-                    toast("Promo masuk ke Voucher saya")
-                    finish() // promo sudah hilang dari daftar Home
+                    aturTombol("Sudah diklaim", aktif = false)
+                    toast("Promo berhasil diklaim! Cek Voucher Saya.")
                 }
+
                 VoucherStore.Hasil.SUDAH_DIKLAIM -> {
-                    toast("Promo sudah diklaim")
-                    finish()
+                    aturTombol("Sudah diklaim", aktif = false)
+                    toast("Promo ini sudah pernah diklaim")
                 }
+
                 VoucherStore.Hasil.BERAKHIR -> {
-                    toast("Promo sudah berakhir")
                     aturTombol("Berakhir", aktif = false)
+                    toast("Promo sudah berakhir")
                 }
+
                 VoucherStore.Hasil.GAGAL -> {
-                    toast("Gagal mengklaim, periksa koneksi")
                     aturTombol("Klaim", aktif = true)
+                    toast("Gagal klaim promo. Periksa koneksi atau izin Firestore.")
                 }
             }
         }
     }
 
-    /** Oranye saat aktif, abu-abu saat nonaktif. */
-    private fun aturTombol(teks: String, aktif: Boolean) {
+    private fun aturTombol(
+        teks: String,
+        aktif: Boolean
+    ) {
         btnKlaim.text = teks
         btnKlaim.isEnabled = aktif
-        btnKlaim.backgroundTintList = ColorStateList.valueOf(
-            if (aktif) ContextCompat.getColor(this, R.color.bk_accent) else Color.parseColor("#C5CBD3")
+
+        btnKlaim.backgroundTintList =
+            ColorStateList.valueOf(
+                if (aktif) {
+                    ContextCompat.getColor(
+                        this,
+                        R.color.bk_accent
+                    )
+                } else {
+                    Color.parseColor("#C5CBD3")
+                }
+            )
+
+        btnKlaim.setTextColor(
+            if (aktif) Color.WHITE
+            else Color.parseColor("#6B7280")
         )
-        btnKlaim.setTextColor(if (aktif) Color.WHITE else Color.parseColor("#6B7280"))
     }
 
     private fun setupBottomNav() {
-        val bottomNav = findViewById<BottomNavigationView>(R.id.bottomNav)
+        val bottomNav =
+            findViewById<BottomNavigationView>(R.id.bottomNav)
 
-        bottomNav.selectedItemId = R.id.nav_promo // sebelum listener
+        bottomNav.selectedItemId = R.id.nav_promo
+
         bottomNav.setOnItemSelectedListener { item ->
             when (item.itemId) {
                 R.id.nav_home -> {
                     startActivity(
-                        Intent(this, HomeActivityCustomer::class.java)
-                            .addFlags(
-                                Intent.FLAG_ACTIVITY_CLEAR_TOP or
-                                        Intent.FLAG_ACTIVITY_SINGLE_TOP
-                            )
+                        Intent(
+                            this,
+                            HomeActivityCustomer::class.java
+                        ).addFlags(
+                            Intent.FLAG_ACTIVITY_CLEAR_TOP or
+                                    Intent.FLAG_ACTIVITY_SINGLE_TOP
+                        )
                     )
                     overridePendingTransition(0, 0)
                     false
                 }
-                R.id.nav_bengkel -> { toast("Peta bengkel"); false }
-                R.id.nav_account -> { toast("Akun"); false }
+
+                R.id.nav_promo -> {
+                    finish()
+                    false
+                }
+
+                R.id.nav_bengkel -> {
+                    toast("Peta bengkel")
+                    false
+                }
+
+                R.id.nav_account -> {
+                    toast("Akun")
+                    false
+                }
+
                 else -> false
             }
         }
-        // Tap Promo lagi = kembali ke daftar promo
-        bottomNav.setOnItemReselectedListener { finish() }
+
+        bottomNav.setOnItemReselectedListener { item ->
+            if (item.itemId == R.id.nav_promo) {
+                finish()
+            }
+        }
     }
 
-    private fun toast(msg: String) =
-        Toast.makeText(this, msg, Toast.LENGTH_SHORT).show()
+    private fun toast(msg: String) {
+        Toast.makeText(
+            this,
+            msg,
+            Toast.LENGTH_SHORT
+        ).show()
+    }
 
     companion object {
         const val EXTRA_PROMO_ID = "promoId"
