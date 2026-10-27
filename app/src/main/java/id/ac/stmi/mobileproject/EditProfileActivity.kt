@@ -1,5 +1,6 @@
 package id.ac.stmi.mobileproject
 
+import android.content.Intent
 import android.os.Bundle
 import android.text.InputType
 import android.util.Patterns
@@ -142,7 +143,9 @@ class EditProfileActivity : AppCompatActivity() {
         binding.btnMale.setOnClickListener { setGender(MALE) }
         binding.btnFemale.setOnClickListener { setGender(FEMALE) }
 
-        binding.btnChangePassword.setOnClickListener { showChangePasswordDialog() }
+        binding.btnChangePassword.setOnClickListener {
+            startActivity(Intent(this, ChangePasswordActivity::class.java))
+        }
     }
 
     // ------------------------------------------------------------------
@@ -290,41 +293,7 @@ class EditProfileActivity : AppCompatActivity() {
     }
 
     // ------------------------------------------------------------------
-    // 7. UBAH KATA SANDI
-    // ------------------------------------------------------------------
-    private fun showChangePasswordDialog() {
-        val etOld = passwordField("Kata sandi saat ini")
-        val etNew = passwordField("Kata sandi baru (min. 6 karakter)")
-        val etConfirm = passwordField("Ulangi kata sandi baru")
-
-        MaterialAlertDialogBuilder(this)
-            .setTitle("Ubah Kata Sandi")
-            .setView(dialogContainer(etOld, etNew, etConfirm))
-            .setNegativeButton("Batal", null)
-            .setPositiveButton("Simpan") { _, _ ->
-                val old = etOld.text.toString()
-                val new = etNew.text.toString()
-                val confirm = etConfirm.text.toString()
-
-                when {
-                    old.isEmpty() -> toast("Kata sandi saat ini wajib diisi")
-                    new.length < 6 -> toast("Kata sandi baru minimal 6 karakter")
-                    new != confirm -> toast("Konfirmasi kata sandi tidak sama")
-                    else -> reauthenticate(old,
-                        onSuccess = {
-                            auth.currentUser?.updatePassword(new)
-                                ?.addOnSuccessListener { toast("Kata sandi berhasil diubah") }
-                                ?.addOnFailureListener { toast("Gagal: ${it.message}") }
-                        },
-                        onFail = {}
-                    )
-                }
-            }
-            .show()
-    }
-
-    // ------------------------------------------------------------------
-    // 8. HELPER
+    // 7. HELPER
     // ------------------------------------------------------------------
     /** Login ulang dengan password (syarat Firebase untuk ganti email / password). */
     private fun reauthenticate(password: String, onSuccess: () -> Unit, onFail: () -> Unit) {

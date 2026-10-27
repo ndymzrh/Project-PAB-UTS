@@ -148,6 +148,10 @@
             android:exported="false"
             android:windowSoftInputMode="adjustResize" />
         <activity
+            android:name=".ChangePasswordActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
+        <activity
             android:name=".BengkelListActivityCustomer"
             android:exported="false"
             android:windowSoftInputMode="adjustResize" />

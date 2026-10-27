@@ -1,6 +1,8 @@
 package id.ac.stmi.mobileproject
 
+import android.content.ActivityNotFoundException
 import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import android.view.View
 import android.widget.Toast
@@ -32,6 +34,12 @@ class AccountActivity : AppCompatActivity() {
     private val idFormat = NumberFormat.getIntegerInstance(Locale("id", "ID"))
 
     private var currentVehicle: Vehicle? = null
+
+    companion object {
+        // Nomor WhatsApp customer care. Format internasional, TANPA "+" dan TANPA 0 di depan.
+        // Contoh: 0812-3456-7890 -> "6281234567890"
+        private const val CS_WHATSAPP_NUMBER = "6285156210062"
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -167,15 +175,29 @@ class AccountActivity : AppCompatActivity() {
         // --- Bantuan & Informasi ---
         bindMenu(binding.menuCare, R.drawable.ic_headset,
             R.string.menu_cs_title, R.string.menu_cs_sub) {
-            toast("Customer care (WhatsApp)")
+            openWhatsApp("Halo Annova AutoCare, saya ingin konsultasi teknis mengenai kendaraan saya.")
         }
         bindMenu(binding.menuFaq, R.drawable.ic_help_box,
             R.string.menu_faq_title, R.string.menu_faq_sub) {
-            toast("Pusat bantuan & FAQ")
+            openWhatsApp("Halo Annova AutoCare, saya butuh bantuan terkait estimasi waktu pengerjaan & suku cadang.")
         }
         bindMenu(binding.menuPolicy, R.drawable.ic_verified,
             R.string.menu_garansi_title, R.string.menu_garansi_sub) {
             toast("Kebijakan garansi & privasi")
+        }
+    }
+
+    /**
+     * Buka chat WhatsApp ke nomor customer care dengan pesan yang sudah terisi.
+     * Memakai link https://wa.me/... : kalau WhatsApp terpasang, langsung terbuka di aplikasinya;
+     * kalau tidak, terbuka di browser.
+     */
+    private fun openWhatsApp(message: String) {
+        val url = "https://wa.me/$CS_WHATSAPP_NUMBER?text=${Uri.encode(message)}"
+        try {
+            startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
+        } catch (e: ActivityNotFoundException) {
+            toast("WhatsApp atau browser tidak ditemukan")
         }
     }
 
