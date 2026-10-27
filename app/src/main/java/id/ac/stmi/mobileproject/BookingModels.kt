@@ -49,6 +49,7 @@ data class BookingDraft(
 data class BookingRecord(
     val id: String,
     val customerId: String,
+    val customerName: String, // <-- FIELD NAMA CUSTOMER
     val vehicleId: String,
     val vehicleName: String,
     val plateNumber: String,
@@ -178,69 +179,77 @@ object BookingRepository {
         onError: (Exception) -> Unit
     ) {
         val bookingRef = db.collection(COLLECTION).document(bookingId)
+        val userRef = db.collection("users").document(uid) // Reference user
         val vehicleRef = db.collection("users").document(uid).collection("vehicles").document(draft.vehicleId)
         val workshopRef = db.collection("bengkel").document(draft.workshopId)
         val serviceRefs = draft.serviceIds.map { db.collection("layanan").document(it) }
 
         db.runTransaction { transaction ->
-                    val existingBooking = transaction.get(bookingRef)
-                    if (existingBooking.exists()) return@runTransaction
+            val existingBooking = transaction.get(bookingRef)
+            if (existingBooking.exists()) return@runTransaction
 
-                    val vehicle = transaction.get(vehicleRef)
-                    require(vehicle.exists()) { "Kendaraan tidak ditemukan." }
+            // Ambil profil customer untuk mendapatkan nama
+            val userSnapshot = transaction.get(userRef)
+            val customerName = userSnapshot.getString("nama")
+                ?: userSnapshot.getString("name")
+                ?: "Customer"
 
-                    val workshop = transaction.get(workshopRef)
-                    require(workshop.exists() && workshop.getBoolean("aktif") != false) {
-                        "Bengkel tidak tersedia."
-                    }
+            val vehicle = transaction.get(vehicleRef)
+            require(vehicle.exists()) { "Kendaraan tidak ditemukan." }
 
-                    val serviceSnapshots = serviceRefs.map { transaction.get(it) }
-                    require(serviceSnapshots.all { it.exists() && it.getBoolean("aktif") != false }) {
-                        "Ada layanan yang sudah tidak tersedia. Silakan pilih ulang."
-                    }
+            val workshop = transaction.get(workshopRef)
+            require(workshop.exists() && workshop.getBoolean("aktif") != false) {
+                "Bengkel tidak tersedia."
+            }
 
-                    val lines = serviceSnapshots.map { service ->
-                        mapOf(
-                            "id" to service.id,
-                            "nama" to (service.getString("nama") ?: service.getString("judul") ?: "Layanan"),
-                            "harga" to ((service.get("harga") as? Number)?.toLong() ?: 0L),
-                            "durasi" to service.get("durasi").toDisplayDuration()
-                        )
-                    }
-                    val subtotal = lines.sumOf { (it["harga"] as Number).toLong() }
-                    val discount = draft.requestedDiscount.coerceIn(0L, subtotal)
-                    val total = (subtotal - discount).coerceAtLeast(0L)
-                    val estimated = estimatedPoints(total)
-                    val now = FieldValue.serverTimestamp()
-                    val data = hashMapOf<String, Any?>(
-                        "bookingId" to bookingId,
-                        "customerId" to uid,
-                        "vehicleId" to draft.vehicleId,
-                        "vehicleName" to (vehicle.getString("brand").orEmpty() + " " + vehicle.getString("model").orEmpty()).trim(),
-                        "plateNumber" to (vehicle.getString("plateNumber") ?: draft.plateNumber),
-                        "serviceIds" to serviceSnapshots.map { it.id },
-                        "serviceNames" to lines.map { it["nama"] as String },
-                        "serviceDetails" to lines,
-                        "workshopId" to draft.workshopId,
-                        "workshopName" to (workshop.getString("nama") ?: draft.workshopName),
-                        "bookingDate" to draft.bookingDate,
-                        "bookingTime" to draft.bookingTime,
-                        "notes" to draft.notes,
-                        "subtotal" to subtotal,
-                        "voucherId" to draft.voucherId,
-                        "discount" to discount,
-                        "totalPrice" to total,
-                        "pointsRate" to POINTS_RATE,
-                        "estimatedPoints" to estimated,
-                        "awardedPoints" to 0L,
-                        "pointsStatus" to PointsStatus.PENDING.name,
-                        "status" to BookingStatus.MENUNGGU_KONFIRMASI.name,
-                        "createdAt" to now,
-                        "updatedAt" to now,
-                        "completedAt" to null,
-                        "pointsAwardedAt" to null
-                    )
-                    transaction.set(bookingRef, data)
+            val serviceSnapshots = serviceRefs.map { transaction.get(it) }
+            require(serviceSnapshots.all { it.exists() && it.getBoolean("aktif") != false }) {
+                "Ada layanan yang sudah tidak tersedia. Silakan pilih ulang."
+            }
+
+            val lines = serviceSnapshots.map { service ->
+                mapOf(
+                    "id" to service.id,
+                    "nama" to (service.getString("nama") ?: service.getString("judul") ?: "Layanan"),
+                    "harga" to ((service.get("harga") as? Number)?.toLong() ?: 0L),
+                    "durasi" to service.get("durasi").toDisplayDuration()
+                )
+            }
+            val subtotal = lines.sumOf { (it["harga"] as Number).toLong() }
+            val discount = draft.requestedDiscount.coerceIn(0L, subtotal)
+            val total = (subtotal - discount).coerceAtLeast(0L)
+            val estimated = estimatedPoints(total)
+            val now = FieldValue.serverTimestamp()
+            val data = hashMapOf<String, Any?>(
+                "bookingId" to bookingId,
+                "customerId" to uid,
+                "customerName" to customerName, // SIMPAN NAMA CUSTOMER KE FIRESTORE
+                "vehicleId" to draft.vehicleId,
+                "vehicleName" to (vehicle.getString("brand").orEmpty() + " " + vehicle.getString("model").orEmpty()).trim(),
+                "plateNumber" to (vehicle.getString("plateNumber") ?: draft.plateNumber),
+                "serviceIds" to serviceSnapshots.map { it.id },
+                "serviceNames" to lines.map { it["nama"] as String },
+                "serviceDetails" to lines,
+                "workshopId" to draft.workshopId,
+                "workshopName" to (workshop.getString("nama") ?: draft.workshopName),
+                "bookingDate" to draft.bookingDate,
+                "bookingTime" to draft.bookingTime,
+                "notes" to draft.notes,
+                "subtotal" to subtotal,
+                "voucherId" to draft.voucherId,
+                "discount" to discount,
+                "totalPrice" to total,
+                "pointsRate" to POINTS_RATE,
+                "estimatedPoints" to estimated,
+                "awardedPoints" to 0L,
+                "pointsStatus" to PointsStatus.PENDING.name,
+                "status" to BookingStatus.MENUNGGU_KONFIRMASI.name,
+                "createdAt" to now,
+                "updatedAt" to now,
+                "completedAt" to null,
+                "pointsAwardedAt" to null
+            )
+            transaction.set(bookingRef, data)
         }.addOnSuccessListener { onSuccess(bookingId) }
             .addOnFailureListener(onError)
     }
@@ -287,6 +296,7 @@ object BookingRepository {
         return BookingRecord(
             id = id,
             customerId = getString("customerId").orEmpty(),
+            customerName = getString("customerName") ?: getString("customerId").orEmpty(), // PETA NAMA
             vehicleId = getString("vehicleId").orEmpty(),
             vehicleName = getString("vehicleName").orEmpty(),
             plateNumber = getString("plateNumber").orEmpty(),

@@ -30,7 +30,7 @@ class BookingPetugasAdapter(
         val booking = getItem(position)
         with(holder.binding) {
             tvBookingId.text = "ID ${booking.id}"
-            tvCustomer.text = "Customer: ${booking.customerId}"
+            tvCustomer.text = "Customer: ${booking.customerName.ifBlank { booking.customerId }}"
             tvBookingTitle.text = booking.serviceNames.ifBlank { "Booking servis" }
             tvWorkshop.text = booking.workshopName
             tvSchedule.text = booking.scheduleText
@@ -64,10 +64,11 @@ class BookingPetugasAdapter(
                 statusInput.setAdapter(
                     ArrayAdapter(
                         root.context,
-                        android.R.layout.simple_dropdown_item_1line,
+                        R.layout.item_dropdown,
                         labels
                     )
                 )
+                statusInput.setDropDownBackgroundResource(R.drawable.bg_dropdown_popup)
                 var selectedStatus = booking.status
                 statusInput.setText(selectedStatus.label, false)
                 statusInput.setOnItemClickListener { _, _, selectedPosition, _ ->

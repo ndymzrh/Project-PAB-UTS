@@ -1,10 +1,17 @@
 package id.ac.stmi.mobileproject
 
 import android.content.Intent
+import android.graphics.Color
 import android.os.Bundle
 import android.widget.Toast
+import androidx.activity.SystemBarStyle
+import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.isVisible
+import androidx.core.view.updatePadding
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.ListenerRegistration
@@ -19,10 +26,22 @@ class RiwayatBookingActivityCustomer : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        enableEdgeToEdge(statusBarStyle = SystemBarStyle.dark(Color.TRANSPARENT))
         binding = ActivityRiwayatBookingCustomerBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        binding.toolbar.setNavigationOnClickListener { finish() }
+        val atasAwal = binding.header.paddingTop
+        val bawahAwal = binding.main.paddingBottom
+
+        ViewCompat.setOnApplyWindowInsetsListener(binding.main) { _, insets ->
+            val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+            binding.header.updatePadding(top = atasAwal + bars.top)
+            binding.main.updatePadding(bottom = bawahAwal + bars.bottom)
+            insets
+        }
+
+
+        binding.btnBack.setOnClickListener { finish() }
         binding.btnNewBooking.setOnClickListener {
             startActivity(Intent(this, LayananActivity::class.java))
         }

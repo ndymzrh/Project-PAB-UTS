@@ -151,14 +151,26 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="12dp"
             android:hint="Update status"
+            app:boxBackgroundMode="outline"
+            app:boxCornerRadiusBottomEnd="12dp"
+            app:boxCornerRadiusBottomStart="12dp"
+            app:boxCornerRadiusTopEnd="12dp"
+            app:boxCornerRadiusTopStart="12dp"
             app:endIconMode="dropdown_menu">
 
             <com.google.android.material.textfield.MaterialAutoCompleteTextView
                 android:id="@+id/statusInput"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:ellipsize="end"
                 android:inputType="none"
-                android:textSize="14sp" />
+                android:lineSpacingExtra="2dp"
+                android:maxLines="2"
+                android:paddingStart="12dp"
+                android:paddingTop="16dp"
+                android:paddingEnd="12dp"
+                android:paddingBottom="16dp"
+                android:textSize="15sp" />
         </com.google.android.material.textfield.TextInputLayout>
 
         <com.google.android.material.button.MaterialButton
@@ -166,9 +178,13 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
+            android:insetTop="0dp"
+            android:insetBottom="0dp"
+            android:minHeight="48dp"
             android:text="Simpan progres"
             android:textAllCaps="false"
             android:textColor="@android:color/white"
+            android:textStyle="bold"
             app:backgroundTint="@color/bk_accent"
             app:cornerRadius="12dp" />
     </LinearLayout>

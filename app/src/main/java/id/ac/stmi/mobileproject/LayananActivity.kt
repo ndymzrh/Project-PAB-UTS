@@ -59,7 +59,6 @@ class LayananActivity : AppCompatActivity() {
         binding = ActivityLayananBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        // Status bar transparan dengan ikon putih di atas header biru tua
         WindowCompat.getInsetsController(window, window.decorView)
             .isAppearanceLightStatusBars = false
 

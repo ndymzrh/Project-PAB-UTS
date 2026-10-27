@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/bk_bg_screen"
@@ -49,8 +50,10 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="24dp"
             app:cardBackgroundColor="@android:color/white"
-            app:cardCornerRadius="18dp"
-            app:cardElevation="2dp">
+            app:cardCornerRadius="20dp"
+            app:cardElevation="3dp"
+            app:strokeColor="@color/bk_stroke_soft"
+            app:strokeWidth="1dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -139,25 +142,31 @@
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnViewPoints"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            android:layout_height="52dp"
+            android:insetTop="0dp"
+            android:insetBottom="0dp"
             android:layout_marginTop="18dp"
             android:text="Lihat riwayat points"
             android:textAllCaps="false"
             android:textColor="@color/bk_primary"
+            android:textStyle="bold"
             app:backgroundTint="@android:color/white"
-            app:cornerRadius="14dp"
+            app:cornerRadius="16dp"
             app:strokeColor="@color/bk_primary"
             app:strokeWidth="1dp" />
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnBackHome"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            android:layout_height="52dp"
+            android:insetTop="0dp"
+            android:insetBottom="0dp"
             android:layout_marginTop="8dp"
             android:text="Kembali ke beranda"
             android:textAllCaps="false"
             android:textColor="@android:color/white"
+            android:textStyle="bold"
             app:backgroundTint="@color/bk_accent"
-            app:cornerRadius="14dp" />
+            app:cornerRadius="16dp" />
     </LinearLayout>
 </ScrollView>

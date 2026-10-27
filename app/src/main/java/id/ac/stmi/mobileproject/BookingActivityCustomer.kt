@@ -1,17 +1,21 @@
 package id.ac.stmi.mobileproject
 
-import android.app.DatePickerDialog
-import android.app.TimePickerDialog
 import android.content.Intent
+import android.content.res.ColorStateList
+import android.graphics.Color
 import android.os.Bundle
 import android.view.View
 import android.widget.ArrayAdapter
 import android.widget.Toast
+import androidx.activity.SystemBarStyle
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.isVisible
+import androidx.core.view.updatePadding
+import com.google.android.material.chip.Chip
 import com.google.android.material.textfield.MaterialAutoCompleteTextView
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.ListenerRegistration
@@ -25,9 +29,8 @@ class BookingActivityCustomer : AppCompatActivity() {
     private lateinit var binding: ActivityBookingCustomerBinding
     private val auth by lazy { FirebaseAuth.getInstance() }
     private val dateStoreFormat = SimpleDateFormat("yyyy-MM-dd", Locale.US)
-    private val dateDisplayFormat = SimpleDateFormat("dd/MM/yyyy", Locale("id", "ID"))
-    private val timeFormat = SimpleDateFormat("HH:mm", Locale.US)
-    private val calendar = Calendar.getInstance()
+    private val jadwalFormat = SimpleDateFormat("EEEE, d MMMM yyyy", Locale("id", "ID"))
+    private val timeChips = linkedMapOf<String, Chip>()
 
     private var vehicleListener: ListenerRegistration? = null
     private var serviceLoaded = false
@@ -54,12 +57,24 @@ class BookingActivityCustomer : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
+        enableEdgeToEdge(statusBarStyle = SystemBarStyle.dark(Color.TRANSPARENT))
         binding = ActivityBookingCustomerBinding.inflate(layoutInflater)
         setContentView(binding.root)
         ViewCompat.setOnApplyWindowInsetsListener(binding.main) { view, insets ->
             val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
             view.setPadding(bars.left, bars.top, bars.right, bars.bottom)
+            insets
+        }
+        binding.actVehicle.setDropDownBackgroundResource(R.drawable.bg_dropdown_popup)
+        binding.actVoucher.setDropDownBackgroundResource(R.drawable.bg_dropdown_popup)
+
+        val atasAwal = binding.header.paddingTop
+        val bawahAwal = binding.main.paddingBottom
+
+        ViewCompat.setOnApplyWindowInsetsListener(binding.main) { _, insets ->
+            val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+            binding.header.updatePadding(top = atasAwal + bars.top)
+            binding.main.updatePadding(bottom = bawahAwal + bars.bottom)
             insets
         }
 
@@ -73,7 +88,7 @@ class BookingActivityCustomer : AppCompatActivity() {
             return
         }
 
-        binding.toolbar.setNavigationOnClickListener { finish() }
+        binding.btnBack.setOnClickListener { finish() }
         binding.btnAddVehicle.setOnClickListener {
             startActivity(Intent(this, AddVehicleActivityCustomer::class.java))
         }
@@ -83,8 +98,7 @@ class BookingActivityCustomer : AppCompatActivity() {
                     .putExtra(BengkelActivityCustomer.EXTRA_MODE_PILIH, true)
             )
         }
-        binding.etDate.setOnClickListener { chooseDate() }
-        binding.etTime.setOnClickListener { chooseTime() }
+        setupJadwal()
         binding.btnConfirm.setOnClickListener { submitBooking() }
         binding.actVoucher.setOnItemClickListener { _, _, position, _ ->
             selectedVoucher = vouchers.getOrNull(position - 1)
@@ -143,7 +157,7 @@ class BookingActivityCustomer : AppCompatActivity() {
                 vehicles = list
                 if (selectedVehicle == null) selectedVehicle = list.firstOrNull { it.primary } ?: list.firstOrNull()
                 val labels = list.map { "${it.displayName} • ${it.plateNumber}" }
-                binding.actVehicle.setAdapter(ArrayAdapter(this, android.R.layout.simple_list_item_1, labels))
+                binding.actVehicle.setAdapter(ArrayAdapter(this, R.layout.item_dropdown, labels))
                 binding.actVehicle.setText(
                     selectedVehicle?.let { "${it.displayName} • ${it.plateNumber}" }.orEmpty(),
                     false
@@ -163,50 +177,82 @@ class BookingActivityCustomer : AppCompatActivity() {
         voucherListener = VoucherStore.listen(this) { list ->
             vouchers = list.filter { it.status() == StatusVoucher.TERSEDIA }
             val labels = listOf("Tanpa voucher") + vouchers.map { "${it.judul} • ${it.label}" }
-            binding.actVoucher.setAdapter(ArrayAdapter(this, android.R.layout.simple_list_item_1, labels))
+            binding.actVoucher.setAdapter(ArrayAdapter(this, R.layout.item_dropdown, labels))
             if (selectedVoucher == null) binding.actVoucher.setText(labels.first(), false)
         }
     }
 
-    private fun chooseDate() {
-        val now = Calendar.getInstance()
-        val initial = selectedDateIso?.let { runCatching { dateStoreFormat.parse(it) }.getOrNull() }
-        val base = initial?.let { Calendar.getInstance().apply { time = it } } ?: now
-        DatePickerDialog(
-            this,
-            { _, year, month, day ->
-                calendar.set(year, month, day)
-                selectedDateIso = dateStoreFormat.format(calendar.time)
-                renderSelectedDateTime()
-            },
-            base.get(Calendar.YEAR),
-            base.get(Calendar.MONTH),
-            base.get(Calendar.DAY_OF_MONTH)
-        ).apply {
-            datePicker.minDate = now.startOfDayMillis()
-        }.show()
+    // ------------------------------------------------------------------
+    // JADWAL: kalender inline + chip jam (tanpa dialog)
+    // ------------------------------------------------------------------
+    private fun setupJadwal() {
+        binding.calendarView.setSelectedDate(selectedDateIso) // pulihkan setelah layar diputar
+        binding.calendarView.onDateSelected = { iso ->
+            selectedDateIso = iso
+            refreshJamTersedia()
+            renderSelectedDateTime()
+        }
+
+        val primary = ContextCompat.getColor(this, R.color.bk_primary)
+        val abu = ContextCompat.getColor(this, R.color.bk_text_secondary)
+        val states = arrayOf(
+            intArrayOf(-android.R.attr.state_enabled),
+            intArrayOf(android.R.attr.state_checked),
+            intArrayOf()
+        )
+        val warnaLatar = ColorStateList(states, intArrayOf(Color.parseColor("#F1F3F6"), primary, Color.WHITE))
+        val warnaGaris = ColorStateList(states, intArrayOf(Color.parseColor("#D5DAE1"), primary, primary))
+        val warnaTeks = ColorStateList(states, intArrayOf(abu, Color.WHITE, primary))
+
+        JAM_TERSEDIA.forEach { jam ->
+            val chip = Chip(this).apply {
+                id = View.generateViewId()
+                text = jam
+                isCheckable = true
+                isCheckedIconVisible = false
+                chipBackgroundColor = warnaLatar
+                chipStrokeColor = warnaGaris
+                chipStrokeWidth = resources.displayMetrics.density
+                setTextColor(warnaTeks)
+                setOnCheckedChangeListener { _, checked ->
+                    if (checked) {
+                        selectedTime = jam
+                        renderSelectedDateTime()
+                    }
+                }
+            }
+            timeChips[jam] = chip
+            binding.chipGroupJam.addView(chip)
+        }
+        selectedTime?.let { timeChips[it]?.isChecked = true }
+        refreshJamTersedia()
     }
 
-    private fun chooseTime() {
-        val base = selectedTime?.let { runCatching { timeFormat.parse(it) }.getOrNull() }
-        val initial = Calendar.getInstance().apply { if (base != null) time = base }
-        TimePickerDialog(
-            this,
-            { _, hour, minute ->
-                selectedTime = String.format(Locale.US, "%02d:%02d", hour, minute)
-                renderSelectedDateTime()
-            },
-            initial.get(Calendar.HOUR_OF_DAY),
-            initial.get(Calendar.MINUTE),
-            true
-        ).show()
+    /** Kalau tanggalnya hari ini, jam yang sudah lewat tidak bisa dipilih. */
+    private fun refreshJamTersedia() {
+        val sekarang = Calendar.getInstance()
+        val hariIni = dateStoreFormat.format(sekarang.time) == selectedDateIso
+        val menitSekarang = sekarang.get(Calendar.HOUR_OF_DAY) * 60 + sekarang.get(Calendar.MINUTE)
+        timeChips.forEach { (jam, chip) ->
+            val menit = jam.substring(0, 2).toInt() * 60 + jam.substring(3).toInt()
+            val lewat = hariIni && menit <= menitSekarang
+            chip.isEnabled = !lewat
+            if (lewat && chip.isChecked) {
+                binding.chipGroupJam.clearCheck()
+                selectedTime = null
+            }
+        }
     }
 
     private fun renderSelectedDateTime() {
-        binding.etDate.setText(
-            selectedDateIso?.let { runCatching { dateDisplayFormat.format(dateStoreFormat.parse(it)!!) }.getOrNull() }.orEmpty()
-        )
-        binding.etTime.setText(selectedTime.orEmpty())
+        val tanggal = selectedDateIso?.let {
+            runCatching { jadwalFormat.format(dateStoreFormat.parse(it)!!) }.getOrNull()
+        }
+        binding.tvJadwalDipilih.text = when {
+            tanggal != null && selectedTime != null -> "$tanggal • $selectedTime"
+            tanggal != null -> "$tanggal • pilih jam"
+            else -> "Pilih tanggal dan jam kedatangan"
+        }
     }
 
     private fun renderWorkshop() {
@@ -285,19 +331,12 @@ class BookingActivityCustomer : AppCompatActivity() {
         }
     }
 
-    private fun Calendar.startOfDayMillis(): Long {
-        return (clone() as Calendar).apply {
-            set(Calendar.HOUR_OF_DAY, 0)
-            set(Calendar.MINUTE, 0)
-            set(Calendar.SECOND, 0)
-            set(Calendar.MILLISECOND, 0)
-        }.timeInMillis
-    }
-
     private fun toast(message: String) = Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
 
     companion object {
         const val EXTRA_SERVICE_IDS = "service_ids"
+        /** Pilihan jam kedatangan. Ubah daftar ini sesuai jam buka bengkel. */
+        private val JAM_TERSEDIA = listOf("08:00", "09:00", "10:00", "11:00", "13:00", "14:00", "15:00", "16:00")
         private const val KEY_BOOKING_ID = "booking_id"
         private const val KEY_DATE = "booking_date"
         private const val KEY_TIME = "booking_time"
