@@ -1,3 +1,4 @@
+
 package id.ac.stmi.mobileproject
 
 import android.content.Intent
@@ -18,17 +19,31 @@ import java.util.Locale
 class PromoActivityCustomer : AppCompatActivity() {
 
     private lateinit var binding: ActivityPromoCustomerBinding
-    private val auth by lazy { FirebaseAuth.getInstance() }
-    private val db by lazy { FirebaseFirestore.getInstance() }
-    private val idFormat = NumberFormat.getIntegerInstance(Locale("id", "ID"))
 
-    private var filter: KategoriPromo = KategoriPromo.SERVIS // chip Servis terpilih di awal
+    private val auth by lazy {
+        FirebaseAuth.getInstance()
+    }
+
+    private val db by lazy {
+        FirebaseFirestore.getInstance()
+    }
+
+    private val idFormat =
+        NumberFormat.getIntegerInstance(Locale("id", "ID"))
+
+    private var filter: KategoriPromo = KategoriPromo.SERVIS
     private lateinit var promoAdapter: PetugasPromoAdapter
+
     private var semuaPromo: List<PromoItem> = emptyList()
+    private var promoSudahDiklaim: Set<String> = emptySet()
+
     private var promoListener: PromoListener? = null
+    private var voucherClaimListener: PromoListener? = null
+    private var voucherJumlahListener: PromoListener? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
         binding = ActivityPromoCustomerBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
@@ -44,161 +59,257 @@ class PromoActivityCustomer : AppCompatActivity() {
         promoAdapter = PetugasPromoAdapter { promo ->
             startActivity(
                 Intent(this, PromoDetailActivity::class.java)
-                    .putExtra(PromoDetailActivity.EXTRA_PROMO_ID, promo.id)
+                    .putExtra(
+                        PromoDetailActivity.EXTRA_PROMO_ID,
+                        promo.id
+                    )
             )
         }
+
         siapkanDaftar()
         setupCategoryChips()
         setupBottomNav()
         setupKartuPoinVoucher()
 
+        PromoStore.seedSekali(this)
         listenPoints(uid)
-        listenVouchers(uid)
     }
 
-    // Promo yang ditambah / dihapus petugas langsung ikut
     override fun onStart() {
         super.onStart()
+
         promoListener = PromoStore.listen(
             this,
-            onChange = { semuaPromo = it; render() },
-            onError = { toast("Gagal memuat promo") }
+            onChange = { promos ->
+                semuaPromo = promos
+                render()
+            },
+            onError = {
+                toast("Gagal memuat promo")
+            }
         )
+
+        voucherClaimListener =
+            VoucherStore.dengarkanPromoDiklaim(
+                this,
+                onChange = { ids ->
+                    promoSudahDiklaim = ids
+                    render()
+                },
+                onError = {
+                    toast("Gagal memuat status klaim promo")
+                }
+            )
+
+        voucherJumlahListener = VoucherStore.listen(
+            this,
+            onError = {
+                toast("Gagal memuat jumlah voucher")
+            }
+        ) { daftarVoucher ->
+            val jumlah =
+                VoucherStore.jumlahTersedia(daftarVoucher)
+
+            binding.tvVoucherSaya.text = jumlah.toString()
+        }
     }
 
     override fun onStop() {
         super.onStop()
+
         promoListener?.remove()
         promoListener = null
-    }
 
-    // ============ DAFTAR PROMO ============
+        voucherClaimListener?.remove()
+        voucherClaimListener = null
+
+        voucherJumlahListener?.remove()
+        voucherJumlahListener = null
+    }
 
     private fun siapkanDaftar() {
         binding.rvPromo.adapter = promoAdapter
     }
 
-
     private fun render() {
         val now = System.currentTimeMillis()
-        val aktif = semuaPromo.filter { it.mulai <= now && it.berakhir >= now }
-        val ada = aktif.isNotEmpty()
 
-        val tampil = if (ada) View.VISIBLE else View.GONE
-        binding.tvPromoHeader.visibility = tampil
-        binding.scrollKategori.visibility = tampil
-        binding.rvPromo.visibility = tampil
+        val aktif = semuaPromo.filter { promo ->
+            promo.berakhir >= now &&
+                    promo.id !in promoSudahDiklaim
+        }
 
-        val list = aktif.filter { it.kategori == filter }
+        val list = aktif.filter { promo ->
+            promo.kategori == filter
+        }
+
         promoAdapter.submitList(list)
-        // teks kosong hanya untuk kategori yang kosong, saat promo lain masih ada
-        binding.tvKosong.visibility = if (ada && list.isEmpty()) View.VISIBLE else View.GONE
+
+        binding.tvPromoHeader.visibility = View.VISIBLE
+        binding.scrollKategori.visibility = View.VISIBLE
+
+        binding.rvPromo.visibility =
+            if (list.isNotEmpty()) View.VISIBLE else View.GONE
+
+        binding.tvKosong.visibility =
+            if (list.isEmpty()) View.VISIBLE else View.GONE
+
+        if (list.isEmpty()) {
+            binding.tvKosong.text = when {
+                semuaPromo.isEmpty() ->
+                    "Belum ada promo tersedia."
+
+                aktif.isEmpty() ->
+                    "Semua promo sudah diklaim atau kedaluwarsa."
+
+                else ->
+                    "Belum ada promo untuk kategori ini."
+            }
+        }
     }
 
-    // ============ DATA POIN & VOUCHER ============
-
-    /** Poin loyalti dari users/{uid}.points (realtime) */
     private fun listenPoints(uid: String) {
-        db.collection("users").document(uid)
+        db.collection("users")
+            .document(uid)
             .addSnapshotListener(this) { snap, error ->
                 if (error != null) {
                     toast("Gagal memuat poin")
                     return@addSnapshotListener
                 }
-                binding.tvPoinSaya.text = idFormat.format(snap?.getLong("points") ?: 0L)
+
+                val points = snap?.getLong("points") ?: 0L
+
+                binding.tvPoinSaya.text =
+                    idFormat.format(points)
             }
     }
-
-    /** Voucher tersedia = dokumen di users/{uid}/vouchers yang "used"-nya bukan true */
-    private fun listenVouchers(uid: String) {
-        db.collection("users").document(uid).collection("vouchers")
-            .addSnapshotListener(this) { snap, error ->
-                if (error != null) {
-                    toast("Gagal memuat voucher")
-                    return@addSnapshotListener
-                }
-                val available = snap?.documents.orEmpty()
-                    .count { it.getBoolean("used") != true }
-                binding.tvVoucherSaya.text = available.toString()
-            }
-    }
-
-    // ============ CHIP KATEGORI ============
 
     private fun setupCategoryChips() {
-        val chips = listOf(binding.chipServis, binding.chipSparepart, binding.chipPoin)
+        val chips = listOf(
+            binding.chipServis,
+            binding.chipSparepart,
+            binding.chipPoin
+        )
 
-        chips.forEach {
-            it.isCheckedIconVisible = false
-            styleChip(it, it.isChecked)
+        chips.forEach { chip ->
+            chip.isCheckedIconVisible = false
+            styleChip(chip, chip.isChecked)
         }
 
-        binding.chipGroupKategori.setOnCheckedStateChangeListener { _, checkedIds ->
-            val checkedId = checkedIds.firstOrNull()
-                ?: return@setOnCheckedStateChangeListener
-            chips.forEach { styleChip(it, it.id == checkedId) }
-            filter = when (checkedId) {
-                R.id.chipSparepart -> KategoriPromo.SPAREPART
-                R.id.chipPoin -> KategoriPromo.POIN
-                else -> KategoriPromo.SERVIS
+        binding.chipGroupKategori
+            .setOnCheckedStateChangeListener { _, checkedIds ->
+
+                val checkedId = checkedIds.firstOrNull()
+                    ?: return@setOnCheckedStateChangeListener
+
+                chips.forEach { chip ->
+                    styleChip(
+                        chip,
+                        chip.id == checkedId
+                    )
+                }
+
+                filter = when (checkedId) {
+                    R.id.chipSparepart ->
+                        KategoriPromo.SPAREPART
+
+                    R.id.chipPoin ->
+                        KategoriPromo.POIN
+
+                    else ->
+                        KategoriPromo.SERVIS
+                }
+
+                render()
             }
-            render()
-        }
     }
 
-    private fun styleChip(chip: Chip, selected: Boolean) {
-        val primary = ContextCompat.getColor(this, R.color.bk_primary)
+    private fun styleChip(
+        chip: Chip,
+        selected: Boolean
+    ) {
+        val primary = ContextCompat.getColor(
+            this,
+            R.color.bk_primary
+        )
+
         chip.chipBackgroundColor =
-            ColorStateList.valueOf(if (selected) primary else Color.WHITE)
-        chip.setTextColor(if (selected) Color.WHITE else primary)
-    }
+            ColorStateList.valueOf(
+                if (selected) primary else Color.WHITE
+            )
 
-    // ============ TAUTAN POIN & VOUCHER ============
+        chip.setTextColor(
+            if (selected) Color.WHITE else primary
+        )
+    }
 
     private fun setupKartuPoinVoucher() {
-        // Kartu = induk dari angka (MaterialCardView / layout pembungkus)
-        val kartuPoin = binding.tvPoinSaya.parent.parent as View
-        val kartuVoucher = binding.tvVoucherSaya.parent.parent as View
-
-        kartuPoin.isClickable = true
-        kartuPoin.setOnClickListener {
-            startActivity(Intent(this, RiwayatPoinCustActivity::class.java))
+        binding.cardPoin.setOnClickListener {
+            startActivity(
+                Intent(
+                    this,
+                    RiwayatPoinCustActivity::class.java
+                )
+            )
         }
-        kartuVoucher.isClickable = true
-        kartuVoucher.setOnClickListener {
-            startActivity(Intent(this, VoucherSayaActivity::class.java))
+
+        binding.cardVoucherSaya.setOnClickListener {
+            startActivity(
+                Intent(
+                    this,
+                    VoucherSayaActivity::class.java
+                )
+            )
         }
     }
 
-    // ============ BOTTOM NAV ============
-
     private fun setupBottomNav() {
-        binding.bottomNav.selectedItemId = R.id.nav_promo // sebelum listener
+        binding.bottomNav.selectedItemId = R.id.nav_promo
 
         binding.bottomNav.setOnItemSelectedListener { item ->
             when (item.itemId) {
                 R.id.nav_home -> {
                     startActivity(
-                        Intent(this, HomeActivityCustomer::class.java)
-                            .addFlags(
-                                Intent.FLAG_ACTIVITY_CLEAR_TOP or
-                                        Intent.FLAG_ACTIVITY_SINGLE_TOP
-                            )
+                        Intent(
+                            this,
+                            HomeActivityCustomer::class.java
+                        ).addFlags(
+                            Intent.FLAG_ACTIVITY_CLEAR_TOP or
+                                    Intent.FLAG_ACTIVITY_SINGLE_TOP
+                        )
                     )
+
                     overridePendingTransition(0, 0)
                     false
                 }
+
                 R.id.nav_promo -> true
-                R.id.nav_bengkel -> { toast("Peta bengkel"); false }
-                R.id.nav_account -> {
-                    startActivity(Intent(this, AccountActivity::class.java))
+
+                R.id.nav_bengkel -> {
+                    toast("Peta bengkel")
                     false
                 }
+
+                R.id.nav_account -> {
+                    startActivity(
+                        Intent(
+                            this,
+                            AccountActivity::class.java
+                        )
+                    )
+                    false
+                }
+
                 else -> false
             }
         }
     }
 
-    private fun toast(msg: String) =
-        Toast.makeText(this, msg, Toast.LENGTH_SHORT).show()
+    private fun toast(msg: String) {
+        Toast.makeText(
+            this,
+            msg,
+            Toast.LENGTH_SHORT
+        ).show()
+    }
 }
