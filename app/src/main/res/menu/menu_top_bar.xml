@@ -5,7 +5,7 @@
 
     <item
         android:id="@+id/action_support"
-        android:icon="@drawable/ic_support"
+        android:icon="@drawable/ic_headset"
         android:title="@string/bantuan"
         app:iconTint="@color/bk_primary"
         app:showAsAction="always" />

@@ -15,7 +15,11 @@ enum class BookingStatus(val label: String) {
     SEDANG_DISERVIS("Sedang diservis"),
     SELESAI("Selesai"),
     DITOLAK("Ditolak"),
-    DIBATALKAN("Dibatalkan")
+    DIBATALKAN("Dibatalkan");
+
+    /** Status akhir: setelah ini booking tidak bisa diubah lagi oleh petugas. */
+    val isFinal: Boolean
+        get() = this == SELESAI || this == DITOLAK || this == DIBATALKAN
 }
 
 enum class PointsStatus {
@@ -183,6 +187,14 @@ object BookingRepository {
 
             val voucherId = booking.getString("voucherId")
             val statusLama = booking.getString("status")
+            // Booking yang sudah selesai / ditolak / dibatalkan tidak boleh diubah lagi
+            // (juga mencegah poin dan voucher diproses dua kali)
+            val statusLamaEnum = runCatching { BookingStatus.valueOf(statusLama.orEmpty()) }.getOrNull()
+            if (statusLamaEnum?.isFinal == true) {
+                throw IllegalStateException(
+                    "Booking sudah ${statusLamaEnum.label.lowercase()}, status tidak bisa diubah lagi."
+                )
+            }
             val kembalikanVoucher =
                 (status == BookingStatus.DIBATALKAN || status == BookingStatus.DITOLAK) &&
                         !voucherId.isNullOrBlank() &&

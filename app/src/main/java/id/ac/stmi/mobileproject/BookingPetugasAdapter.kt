@@ -56,9 +56,11 @@ class BookingPetugasAdapter(
                 BookingStatus.DITOLAK, BookingStatus.DIBATALKAN -> 100
             }
 
-            statusLayout.isVisible = allowStatusUpdate
-            btnUpdateStatus.isVisible = allowStatusUpdate
-            if (allowStatusUpdate) {
+            // Status akhir (selesai/ditolak/dibatalkan): form ubah status disembunyikan
+            val bisaUbah = allowStatusUpdate && !booking.status.isFinal
+            statusLayout.isVisible = bisaUbah
+            btnUpdateStatus.isVisible = bisaUbah
+            if (bisaUbah) {
                 val statuses = BookingStatus.values()
                 val labels = statuses.map { it.label }
                 statusInput.setAdapter(

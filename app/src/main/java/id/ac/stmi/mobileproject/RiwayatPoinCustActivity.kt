@@ -2,9 +2,13 @@ package id.ac.stmi.mobileproject
 
 import android.os.Bundle
 import android.widget.Toast
+import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.isVisible
+import androidx.core.view.updatePadding
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.ListenerRegistration
 import id.ac.stmi.mobileproject.databinding.ActivityRiwayatPoinCustBinding
@@ -24,7 +28,8 @@ class RiwayatPoinCustActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivityRiwayatPoinCustBinding.inflate(layoutInflater)
         setContentView(binding.root)
-        binding.toolbar.setNavigationOnClickListener { finish() }
+        enableEdgeToEdge()
+        binding.btnBack.setOnClickListener { finish() }
         binding.tabFilter.addOnTabSelectedListener(object : com.google.android.material.tabs.TabLayout.OnTabSelectedListener {
             override fun onTabSelected(tab: com.google.android.material.tabs.TabLayout.Tab) {
                 selectedTab = tab.position
@@ -34,6 +39,15 @@ class RiwayatPoinCustActivity : AppCompatActivity() {
             override fun onTabUnselected(tab: com.google.android.material.tabs.TabLayout.Tab) = Unit
             override fun onTabReselected(tab: com.google.android.material.tabs.TabLayout.Tab) = Unit
         })
+
+        val atasAwal = binding.header.paddingTop
+        val bawahAwal = binding.main.paddingBottom
+        ViewCompat.setOnApplyWindowInsetsListener(binding.main) { _, insets ->
+            val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+            binding.header.updatePadding(top = atasAwal + bars.top)
+            binding.main.updatePadding(bottom = bawahAwal + bars.bottom)
+            insets
+        }
 
         val uid = FirebaseAuth.getInstance().currentUser?.uid
         if (uid == null) {
