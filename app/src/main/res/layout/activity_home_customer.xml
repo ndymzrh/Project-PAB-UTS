@@ -503,7 +503,6 @@
             android:layout_marginTop="28dp"
             android:background="@android:color/white"
             app:elevation="0dp"
-            app:itemActiveIndicatorStyle="@null"
             app:itemIconTint="@color/bk_nav_item_color"
             app:itemTextColor="@color/bk_nav_item_color"
             app:labelVisibilityMode="labeled"

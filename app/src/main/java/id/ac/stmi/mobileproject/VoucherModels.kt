@@ -1,4 +1,3 @@
-
 package id.ac.stmi.mobileproject
 
 enum class StatusVoucher(val label: String) {
@@ -20,7 +19,8 @@ data class VoucherSaya(
     val tglKlaim: Long,
     val berakhir: Long,
     val jenisDiskon: String = "",
-    val nilaiDiskon: Long = 0L
+    val nilaiDiskon: Long = 0L,
+    val layananIds: List<String> = emptyList() // tidak dipakai lagi untuk pencocokan; dipertahankan agar data lama terbaca
 ) {
     fun status(now: Long = System.currentTimeMillis()): StatusVoucher {
         return when {
@@ -30,3 +30,11 @@ data class VoucherSaya(
         }
     }
 }
+
+/** Voucher bisa dipakai untuk satu layanan jika namanya sama/mirip. */
+fun VoucherSaya.bisaDipakaiUntuk(namaLayanan: String): Boolean =
+    namaLayananMirip(judul, namaLayanan)
+
+/** Voucher bisa dipakai jika cocok dengan salah satu layanan yang dipilih. */
+fun VoucherSaya.bisaDipakaiUntuk(namaLayananDipilih: Collection<String>): Boolean =
+    namaLayananDipilih.any { namaLayananMirip(judul, it) }

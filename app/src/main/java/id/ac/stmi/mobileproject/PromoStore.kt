@@ -1,4 +1,3 @@
-
 package id.ac.stmi.mobileproject
 
 import android.content.Context
@@ -16,6 +15,9 @@ class PromoListener(private val stop: () -> Unit) {
 /**
  * Promo disimpan di Cloud Firestore, koleksi "promos".
  * Document ID = kode promo (uppercase).
+ * Semua promo dibuat petugas lewat form tambah promo (tidak ada promo bawaan).
+ *
+ * Klaim / penukaran poin ada di VoucherStore.klaim().
  */
 object PromoStore {
 
@@ -40,10 +42,13 @@ object PromoStore {
         "berakhir" to berakhir,
         "berlaku" to berlaku,
         "syarat" to syarat,
-        "gambar" to gambar
+        "gambar" to gambar,
+        "layananIds" to layananIds,
+        "poinDibutuhkan" to poinDibutuhkan
     )
 
     private fun DocumentSnapshot.toPromo(): PromoItem? {
+        if (!exists()) return null
         return try {
             val kategoriStr = getString("kategori") ?: return null
 
@@ -67,11 +72,72 @@ object PromoStore {
                 berakhir = getLong("berakhir") ?: 0L,
                 berlaku = getString("berlaku").orEmpty(),
                 syarat = getString("syarat").orEmpty(),
-                gambar = getString("gambar") ?: "bg_promo1"
+                gambar = getString("gambar") ?: "bg_promo1",
+                layananIds = (get("layananIds") as? List<*>).orEmpty().filterIsInstance<String>(),
+                poinDibutuhkan = getLong("poinDibutuhkan") ?: 0L
             )
         } catch (e: Exception) {
             Log.e("PromoStore", "Error parsing promo document $id", e)
             null
+        }
+    }
+
+    /** Dipakai VoucherStore untuk membaca promo di dalam transaction. */
+    fun dariDokumen(d: DocumentSnapshot): PromoItem? = d.toPromo()
+
+    fun seedSekali(ctx: Context) {
+        col.limit(1).get().addOnSuccessListener { snap ->
+            if (snap.isEmpty) {
+                val now = System.currentTimeMillis()
+                val oneYearLater = now + 365L * 24 * 60 * 60 * 1000
+                val defaultPromos = listOf(
+                    PromoItem(
+                        id = "SERVISHEMAT",
+                        judul = "Servis Berkala Hemat",
+                        kategori = KategoriPromo.SERVIS,
+                        kode = "SERVISHEMAT",
+                        jenisDiskon = "Persen",
+                        nilai = 20L,
+                        mulai = now,
+                        berakhir = oneYearLater,
+                        berlaku = "Semua Servis Berkala",
+                        syarat = "Minimum transaksi Rp 200.000",
+                        gambar = "bg_promo1",
+                        poinDibutuhkan = 0L
+                    ),
+                    PromoItem(
+                        id = "DISKONOLI",
+                        judul = "Diskon Oli Mesin",
+                        kategori = KategoriPromo.SPAREPART,
+                        kode = "DISKONOLI",
+                        jenisDiskon = "Nominal",
+                        nilai = 50000L,
+                        mulai = now,
+                        berakhir = oneYearLater,
+                        berlaku = "Pembelian Oli",
+                        syarat = "Berlaku untuk semua jenis oli",
+                        gambar = "bg_promo3",
+                        poinDibutuhkan = 0L
+                    ),
+                    PromoItem(
+                        id = "POINHEMAT",
+                        judul = "Voucher Poin 10%",
+                        kategori = KategoriPromo.POIN,
+                        kode = "POINHEMAT",
+                        jenisDiskon = "Persen",
+                        nilai = 10L,
+                        mulai = now,
+                        berakhir = oneYearLater,
+                        berlaku = "Semua Servis",
+                        syarat = "Tukar dengan 100 poin",
+                        gambar = "bg_promo2",
+                        poinDibutuhkan = 100L
+                    )
+                )
+                for (p in defaultPromos) {
+                    col.document(p.id).set(p.toMap())
+                }
+            }
         }
     }
 
@@ -86,11 +152,7 @@ object PromoStore {
     ): PromoListener {
         val reg = col.addSnapshotListener { snap, err ->
             if (err != null || snap == null) {
-                Log.e(
-                    "PromoStore",
-                    "Gagal mendengarkan promo dari Firestore",
-                    err
-                )
+                Log.e("PromoStore", "Gagal mendengarkan promo dari Firestore", err)
                 onError()
                 return@addSnapshotListener
             }
@@ -145,36 +207,23 @@ object PromoStore {
                 } else {
                     ref.set(data)
                         .addOnSuccessListener {
-                            Log.d(
-                                "PromoStore",
-                                "Promo berhasil disimpan: $kodePromo"
-                            )
+                            Log.d("PromoStore", "Promo berhasil disimpan: $kodePromo")
                             onDone(Hasil.SUKSES, null)
                         }
                         .addOnFailureListener { error ->
-                            Log.e(
-                                "PromoStore",
-                                "Gagal menyimpan promo: $kodePromo",
-                                error
-                            )
+                            Log.e("PromoStore", "Gagal menyimpan promo: $kodePromo", error)
                             onDone(
                                 Hasil.GAGAL,
-                                error.localizedMessage
-                                    ?: "Gagal menyimpan promo ke Firebase"
+                                error.localizedMessage ?: "Gagal menyimpan promo ke Firebase"
                             )
                         }
                 }
             }
             .addOnFailureListener { error ->
-                Log.e(
-                    "PromoStore",
-                    "Gagal memeriksa kode promo: $kodePromo",
-                    error
-                )
+                Log.e("PromoStore", "Gagal memeriksa kode promo: $kodePromo", error)
                 onDone(
                     Hasil.GAGAL,
-                    error.localizedMessage
-                        ?: "Gagal memeriksa kode promo di Firebase"
+                    error.localizedMessage ?: "Gagal memeriksa kode promo di Firebase"
                 )
             }
     }
@@ -185,128 +234,10 @@ object PromoStore {
         onDone: (Boolean) -> Unit
     ) {
         col.document(id).delete()
-            .addOnSuccessListener {
-                onDone(true)
-            }
+            .addOnSuccessListener { onDone(true) }
             .addOnFailureListener {
                 Log.e("PromoStore", "Gagal menghapus promo", it)
                 onDone(false)
             }
-    }
-
-    /**
-     * Memperbarui empat promo bawaan berdasarkan kode.
-     * Promo petugas dengan kode lain tidak disentuh.
-     *
-     * Catatan: field empat dokumen ini akan ditulis ulang.
-     */
-    fun seedSekali(ctx: Context) {
-        val batch = db.batch()
-
-        dataAwal().forEach { promo ->
-            val kode = promo.kode.trim().uppercase()
-            val ref = col.document(kode)
-
-            val data = promo.copy(
-                id = kode,
-                kode = kode
-            ).toMap()
-
-            batch.set(ref, data)
-        }
-
-        batch.commit()
-            .addOnSuccessListener {
-                Log.d(
-                    "PromoStore",
-                    "Promo default berhasil diperbarui"
-                )
-            }
-            .addOnFailureListener { error ->
-                Log.e(
-                    "PromoStore",
-                    "Gagal memperbarui promo default",
-                    error
-                )
-            }
-    }
-
-    private fun dataAwal(): List<PromoItem> {
-        val now = System.currentTimeMillis()
-        val mulai = now - (30L * 24 * 3600 * 1000)
-        val berakhir1 = now + (90L * 24 * 3600 * 1000)
-        val berakhir2 = now + (180L * 24 * 3600 * 1000)
-
-        val syarat = "Berlaku di seluruh cabang Annova."
-
-        return listOf(
-            PromoItem(
-                id = "SERVISHEMAT25",
-                judul = "Diskon 25% Servis Berkala",
-                kategori = KategoriPromo.SERVIS,
-                kode = "SERVISHEMAT25",
-                jenisDiskon = "Persen",
-                nilai = 25,
-                mulai = mulai,
-                berakhir = berakhir1,
-                berlaku = "Servis berkala",
-                syarat = "Berlaku untuk kendaraan jenis mobil penumpang.\n" +
-                        "Minimal transaksi servis Rp 200.000.\n" +
-                        "Tidak dapat digabung dengan promo lain.\n" +
-                        syarat,
-                gambar = "bg_promo1"
-            ),
-
-            PromoItem(
-                id = "POINSERVIS50",
-                judul = "Voucher Servis Poin Loyalitas",
-                kategori = KategoriPromo.POIN,
-                kode = "POINSERVIS50",
-                jenisDiskon = "Nominal",
-                nilai = 50000,
-                mulai = mulai,
-                berakhir = berakhir1,
-                berlaku = "Poin loyalitas",
-                syarat = "Voucher senilai Rp 50.000 untuk transaksi servis.\n" +
-                        "Ditukar dengan poin loyalitas yang tersedia.\n" +
-                        "Tidak dapat diuangkan.\n" +
-                        syarat,
-                gambar = "bg_promo2"
-            ),
-
-            PromoItem(
-                id = "REMTUNE10",
-                judul = "Paket Kampas Rem & Tune-up",
-                kategori = KategoriPromo.SPAREPART,
-                kode = "REMTUNE10",
-                jenisDiskon = "Persen",
-                nilai = 10,
-                mulai = mulai,
-                berakhir = berakhir2,
-                berlaku = "Kampas rem, tune-up",
-                syarat = "Diskon 10% untuk paket kampas rem dan tune-up.\n" +
-                        "Berlaku untuk kendaraan jenis mobil penumpang.\n" +
-                        "Tidak dapat digabung dengan promo lain.\n" +
-                        syarat,
-                gambar = "bg_promo3"
-            ),
-
-            PromoItem(
-                id = "CEKACGRATIS",
-                judul = "Gratis Cek AC Mobil",
-                kategori = KategoriPromo.SERVIS,
-                kode = "CEKACGRATIS",
-                jenisDiskon = "Nominal",
-                nilai = 0,
-                mulai = mulai,
-                berakhir = berakhir2,
-                berlaku = "Cek AC",
-                syarat = "Pengecekan AC gratis tanpa minimal transaksi.\n" +
-                        "Satu kali pemakaian per kendaraan.\n" +
-                        "Tidak termasuk biaya perbaikan atau penggantian part.\n" +
-                        syarat,
-                gambar = "bg_promo4"
-            )
-        )
     }
 }

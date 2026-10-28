@@ -43,13 +43,14 @@ data class BookingDraft(
     val bookingTime: String,
     val notes: String,
     val voucherId: String?,
-    val requestedDiscount: Long
+    val requestedDiscount: Long,   // diskon voucher saja
+    val pointsUsed: Long = 0L      // BARU: jumlah poin yang dipakai
 )
 
 data class BookingRecord(
     val id: String,
     val customerId: String,
-    val customerName: String, // <-- FIELD NAMA CUSTOMER
+    val customerName: String,
     val vehicleId: String,
     val vehicleName: String,
     val plateNumber: String,
@@ -100,7 +101,21 @@ object BookingRepository {
     const val COLLECTION = "bookings"
     const val POINTS_RATE = 0.10
 
+    /** 1 poin = Rp1. Samakan dengan POINT_VALUE di BookingActivityCustomer. */
+    const val POINT_VALUE = 1L
+
     private val db get() = FirebaseFirestore.getInstance()
+
+    /** Hitung diskon voucher. Dipakai di layar booking (tampilan) dan di create() (validasi server). */
+    fun hitungDiskonVoucher(jenis: String, nilai: Long, label: String, subtotal: Long): Long {
+        val labelBersih = label.trim()
+        val persen = jenis == "Persen" || (jenis.isBlank() && labelBersih.contains("%"))
+        val angka = if (nilai > 0L) nilai else labelBersih.filter { it.isDigit() }.toLongOrNull() ?: 0L
+        val diskon = if (persen) {
+            if (angka >= 100L) subtotal else subtotal * angka / 100L
+        } else angka
+        return diskon.coerceIn(0L, subtotal)
+    }
 
     fun newBookingId(): String = "BK-${UUID.randomUUID().toString().replace("-", "").take(10).uppercase()}"
 
@@ -157,17 +172,70 @@ object BookingRepository {
         onSuccess: () -> Unit,
         onError: (Exception) -> Unit
     ) {
-        val updates = hashMapOf<String, Any>(
-            "status" to status.name,
-            "updatedAt" to FieldValue.serverTimestamp()
-        )
-        if (status == BookingStatus.SELESAI) {
-            updates["completedAt"] = FieldValue.serverTimestamp()
-        }
-        db.collection(COLLECTION)
-            .document(bookingId)
-            .update(updates)
-            .addOnSuccessListener { onSuccess() }
+        val bookingRef = db.collection(COLLECTION).document(bookingId)
+
+        db.runTransaction { tx ->
+            // ===== READ DULU =====
+            val booking = tx.get(bookingRef)
+            val customerId = booking.getString("customerId").orEmpty()
+            val sudahDiberi = booking.getString("pointsStatus") == PointsStatus.AWARDED.name
+            val estimasi = (booking.get("estimatedPoints") as? Number)?.toLong() ?: 0L
+
+            val voucherId = booking.getString("voucherId")
+            val statusLama = booking.getString("status")
+            val kembalikanVoucher =
+                (status == BookingStatus.DIBATALKAN || status == BookingStatus.DITOLAK) &&
+                        !voucherId.isNullOrBlank() &&
+                        statusLama != BookingStatus.DIBATALKAN.name &&
+                        statusLama != BookingStatus.DITOLAK.name
+
+            val beriPoin = status == BookingStatus.SELESAI &&
+                    !sudahDiberi && estimasi > 0L && customerId.isNotBlank()
+
+            val userRef = if (beriPoin) db.collection("users").document(customerId) else null
+            val saldo = if (userRef != null) {
+                (tx.get(userRef).get("points") as? Number)?.toLong() ?: 0L
+            } else 0L
+
+            // ===== WRITE =====
+            val updates = hashMapOf<String, Any>(
+                "status" to status.name,
+                "updatedAt" to FieldValue.serverTimestamp()
+            )
+
+            if (status == BookingStatus.SELESAI) {
+                updates["completedAt"] = FieldValue.serverTimestamp()
+            }
+
+            if (beriPoin && userRef != null) {
+                tx.update(userRef, "points", saldo + estimasi)
+                tx.set(
+                    db.collection("points_transactions").document("earn_$bookingId"),
+                    hashMapOf(
+                        "customerId" to customerId,
+                        "bookingId" to bookingId,
+                        "type" to "EARN",
+                        "points" to estimasi,
+                        "description" to "Poin dari servis selesai",
+                        "createdAt" to FieldValue.serverTimestamp()
+                    )
+                )
+                updates["awardedPoints"] = estimasi
+                updates["pointsStatus"] = PointsStatus.AWARDED.name
+                updates["pointsAwardedAt"] = FieldValue.serverTimestamp()
+            }
+
+            // Booking dibatalkan/ditolak: voucher kembali ke tab "Tersedia"
+            if (kembalikanVoucher && voucherId != null) {
+                tx.update(
+                    db.collection("vouchers").document(voucherId),
+                    "dipakai", false
+                )
+            }
+
+            tx.update(bookingRef, updates)
+            null
+        }.addOnSuccessListener { onSuccess() }
             .addOnFailureListener(onError)
     }
 
@@ -179,20 +247,24 @@ object BookingRepository {
         onError: (Exception) -> Unit
     ) {
         val bookingRef = db.collection(COLLECTION).document(bookingId)
-        val userRef = db.collection("users").document(uid) // Reference user
+        val userRef = db.collection("users").document(uid)
         val vehicleRef = db.collection("users").document(uid).collection("vehicles").document(draft.vehicleId)
         val workshopRef = db.collection("bengkel").document(draft.workshopId)
         val serviceRefs = draft.serviceIds.map { db.collection("layanan").document(it) }
+        val redeemRef = db.collection("points_transactions").document("redeem_$bookingId")
+        val voucherRef = draft.voucherId?.takeIf { it.isNotBlank() }
+            ?.let { db.collection("vouchers").document(it) }
 
         db.runTransaction { transaction ->
+            // ===== SEMUA READ DULU =====
             val existingBooking = transaction.get(bookingRef)
-            if (existingBooking.exists()) return@runTransaction
+            if (existingBooking.exists()) return@runTransaction null
 
-            // Ambil profil customer untuk mendapatkan nama
             val userSnapshot = transaction.get(userRef)
             val customerName = userSnapshot.getString("nama")
                 ?: userSnapshot.getString("name")
                 ?: "Customer"
+            val saldoPoin = (userSnapshot.get("points") as? Number)?.toLong() ?: 0L
 
             val vehicle = transaction.get(vehicleRef)
             require(vehicle.exists()) { "Kendaraan tidak ditemukan." }
@@ -207,6 +279,8 @@ object BookingRepository {
                 "Ada layanan yang sudah tidak tersedia. Silakan pilih ulang."
             }
 
+            val voucherSnap = voucherRef?.let { transaction.get(it) }
+
             val lines = serviceSnapshots.map { service ->
                 mapOf(
                     "id" to service.id,
@@ -216,14 +290,55 @@ object BookingRepository {
                 )
             }
             val subtotal = lines.sumOf { (it["harga"] as Number).toLong() }
-            val discount = draft.requestedDiscount.coerceIn(0L, subtotal)
+
+            // ===== HITUNG DISKON: voucher dulu, lalu poin =====
+            var voucherDiscount = 0L
+            if (voucherSnap != null) {
+                require(voucherSnap.exists() && voucherSnap.getString("pemilik") == uid) {
+                    "Voucher tidak valid."
+                }
+                require(voucherSnap.getBoolean("dipakai") != true) { "Voucher sudah dipakai." }
+                require((voucherSnap.getLong("berakhir") ?: 0L) >= System.currentTimeMillis()) {
+                    "Voucher sudah kedaluwarsa."
+                }
+
+                // Voucher khusus layanan tertentu: hanya berlaku untuk layanan yang cocok
+                val idBerlaku = (voucherSnap.get("layananIds") as? List<*>).orEmpty()
+                    .filterIsInstance<String>()
+                val dasarDiskon = if (idBerlaku.isEmpty()) {
+                    subtotal
+                } else {
+                    require(lines.any { (it["id"] as String) in idBerlaku }) {
+                        "Voucher ini tidak berlaku untuk layanan yang dipilih."
+                    }
+                    lines.filter { (it["id"] as String) in idBerlaku }
+                        .sumOf { (it["harga"] as Number).toLong() }
+                }
+
+                voucherDiscount = hitungDiskonVoucher(
+                    voucherSnap.getString("jenisDiskon").orEmpty(),
+                    voucherSnap.getLong("nilaiDiskon") ?: 0L,
+                    voucherSnap.getString("label").orEmpty(),
+                    dasarDiskon
+                )
+            }
+            val sisaSetelahVoucher = subtotal - voucherDiscount
+
+            val poinDiminta = draft.pointsUsed.coerceAtLeast(0L)
+            require(poinDiminta <= saldoPoin) { "Saldo poin tidak cukup." }
+            val poinMaksimal = sisaSetelahVoucher / POINT_VALUE
+            val poinDipakai = minOf(poinDiminta, poinMaksimal)
+            val pointDiscount = poinDipakai * POINT_VALUE
+
+            val discount = voucherDiscount + pointDiscount
             val total = (subtotal - discount).coerceAtLeast(0L)
             val estimated = estimatedPoints(total)
             val now = FieldValue.serverTimestamp()
+
             val data = hashMapOf<String, Any?>(
                 "bookingId" to bookingId,
                 "customerId" to uid,
-                "customerName" to customerName, // SIMPAN NAMA CUSTOMER KE FIRESTORE
+                "customerName" to customerName,
                 "vehicleId" to draft.vehicleId,
                 "vehicleName" to (vehicle.getString("brand").orEmpty() + " " + vehicle.getString("model").orEmpty()).trim(),
                 "plateNumber" to (vehicle.getString("plateNumber") ?: draft.plateNumber),
@@ -238,6 +353,7 @@ object BookingRepository {
                 "subtotal" to subtotal,
                 "voucherId" to draft.voucherId,
                 "discount" to discount,
+                "pointsUsed" to poinDipakai,
                 "totalPrice" to total,
                 "pointsRate" to POINTS_RATE,
                 "estimatedPoints" to estimated,
@@ -249,7 +365,37 @@ object BookingRepository {
                 "completedAt" to null,
                 "pointsAwardedAt" to null
             )
+
+            // ===== SEMUA WRITE (atomic) =====
             transaction.set(bookingRef, data)
+
+            // Voucher langsung berpindah ke tab "Terpakai" (atomic bersama booking)
+            if (voucherRef != null) {
+                transaction.update(
+                    voucherRef,
+                    mapOf(
+                        "dipakai" to true,
+                        "bookingId" to bookingId,
+                        "tglDipakai" to System.currentTimeMillis()
+                    )
+                )
+            }
+
+            if (poinDipakai > 0L) {
+                transaction.update(userRef, "points", saldoPoin - poinDipakai)
+                transaction.set(
+                    redeemRef,
+                    hashMapOf(
+                        "customerId" to uid,
+                        "bookingId" to bookingId,
+                        "type" to "REDEEM",
+                        "points" to -poinDipakai,   // negatif -> tampil "-500" di riwayat
+                        "description" to "Dipakai untuk booking servis",
+                        "createdAt" to FieldValue.serverTimestamp()
+                    )
+                )
+            }
+            null
         }.addOnSuccessListener { onSuccess(bookingId) }
             .addOnFailureListener(onError)
     }
@@ -296,7 +442,7 @@ object BookingRepository {
         return BookingRecord(
             id = id,
             customerId = getString("customerId").orEmpty(),
-            customerName = getString("customerName") ?: getString("customerId").orEmpty(), // PETA NAMA
+            customerName = getString("customerName") ?: getString("customerId").orEmpty(),
             vehicleId = getString("vehicleId").orEmpty(),
             vehicleName = getString("vehicleName").orEmpty(),
             plateNumber = getString("plateNumber").orEmpty(),

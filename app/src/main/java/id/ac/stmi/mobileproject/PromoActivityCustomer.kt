@@ -1,4 +1,3 @@
-
 package id.ac.stmi.mobileproject
 
 import android.content.Intent
@@ -20,18 +19,14 @@ class PromoActivityCustomer : AppCompatActivity() {
 
     private lateinit var binding: ActivityPromoCustomerBinding
 
-    private val auth by lazy {
-        FirebaseAuth.getInstance()
-    }
-
-    private val db by lazy {
-        FirebaseFirestore.getInstance()
-    }
+    private val auth by lazy { FirebaseAuth.getInstance() }
+    private val db by lazy { FirebaseFirestore.getInstance() }
 
     private val idFormat =
         NumberFormat.getIntegerInstance(Locale("id", "ID"))
 
-    private var filter: KategoriPromo = KategoriPromo.SERVIS
+    /** null = Semua kategori. */
+    private var filter: KategoriPromo? = null
     private lateinit var promoAdapter: PetugasPromoAdapter
 
     private var semuaPromo: List<PromoItem> = emptyList()
@@ -59,10 +54,7 @@ class PromoActivityCustomer : AppCompatActivity() {
         promoAdapter = PetugasPromoAdapter { promo ->
             startActivity(
                 Intent(this, PromoDetailActivity::class.java)
-                    .putExtra(
-                        PromoDetailActivity.EXTRA_PROMO_ID,
-                        promo.id
-                    )
+                    .putExtra(PromoDetailActivity.EXTRA_PROMO_ID, promo.id)
             )
         }
 
@@ -78,39 +70,33 @@ class PromoActivityCustomer : AppCompatActivity() {
     override fun onStart() {
         super.onStart()
 
+        // Menu Promo tetap tertandai saat kembali dari halaman lain
+        binding.bottomNav.menu.findItem(R.id.nav_promo)?.isChecked = true
+
         promoListener = PromoStore.listen(
             this,
             onChange = { promos ->
                 semuaPromo = promos
                 render()
             },
-            onError = {
-                toast("Gagal memuat promo")
-            }
+            onError = { toast("Gagal memuat promo") }
         )
 
-        voucherClaimListener =
-            VoucherStore.dengarkanPromoDiklaim(
-                this,
-                onChange = { ids ->
-                    promoSudahDiklaim = ids
-                    render()
-                },
-                onError = {
-                    toast("Gagal memuat status klaim promo")
-                }
-            )
+        voucherClaimListener = VoucherStore.dengarkanPromoDiklaim(
+            this,
+            onChange = { ids ->
+                promoSudahDiklaim = ids
+                render()
+            },
+            onError = { toast("Gagal memuat status klaim promo") }
+        )
 
         voucherJumlahListener = VoucherStore.listen(
             this,
-            onError = {
-                toast("Gagal memuat jumlah voucher")
-            }
+            onError = { toast("Gagal memuat jumlah voucher") }
         ) { daftarVoucher ->
-            val jumlah =
-                VoucherStore.jumlahTersedia(daftarVoucher)
-
-            binding.tvVoucherSaya.text = jumlah.toString()
+            binding.tvVoucherSaya.text =
+                VoucherStore.jumlahTersedia(daftarVoucher).toString()
         }
     }
 
@@ -127,6 +113,13 @@ class PromoActivityCustomer : AppCompatActivity() {
         voucherJumlahListener = null
     }
 
+    // Hilangkan animasi saat activity ditutup supaya perpindahan tab mulus
+    override fun finish() {
+        super.finish()
+        @Suppress("DEPRECATION")
+        overridePendingTransition(0, 0)
+    }
+
     private fun siapkanDaftar() {
         binding.rvPromo.adapter = promoAdapter
     }
@@ -135,12 +128,14 @@ class PromoActivityCustomer : AppCompatActivity() {
         val now = System.currentTimeMillis()
 
         val aktif = semuaPromo.filter { promo ->
-            promo.berakhir >= now &&
-                    promo.id !in promoSudahDiklaim
+            promo.berakhir >= now && promo.id !in promoSudahDiklaim
         }
 
-        val list = aktif.filter { promo ->
-            promo.kategori == filter
+        val kategori = filter
+        val list = if (kategori == null) {
+            aktif
+        } else {
+            aktif.filter { promo -> promo.kategori == kategori }
         }
 
         promoAdapter.submitList(list)
@@ -156,14 +151,9 @@ class PromoActivityCustomer : AppCompatActivity() {
 
         if (list.isEmpty()) {
             binding.tvKosong.text = when {
-                semuaPromo.isEmpty() ->
-                    "Belum ada promo tersedia."
-
-                aktif.isEmpty() ->
-                    "Semua promo sudah diklaim atau kedaluwarsa."
-
-                else ->
-                    "Belum ada promo untuk kategori ini."
+                semuaPromo.isEmpty() -> "Belum ada promo tersedia."
+                aktif.isEmpty() -> "Semua promo sudah diklaim atau kedaluwarsa."
+                else -> "Belum ada promo untuk kategori ini."
             }
         }
     }
@@ -178,14 +168,13 @@ class PromoActivityCustomer : AppCompatActivity() {
                 }
 
                 val points = snap?.getLong("points") ?: 0L
-
-                binding.tvPoinSaya.text =
-                    idFormat.format(points)
+                binding.tvPoinSaya.text = idFormat.format(points)
             }
     }
 
     private fun setupCategoryChips() {
         val chips = listOf(
+            binding.chipSemua,
             binding.chipServis,
             binding.chipSparepart,
             binding.chipPoin
@@ -203,113 +192,72 @@ class PromoActivityCustomer : AppCompatActivity() {
                     ?: return@setOnCheckedStateChangeListener
 
                 chips.forEach { chip ->
-                    styleChip(
-                        chip,
-                        chip.id == checkedId
-                    )
+                    styleChip(chip, chip.id == checkedId)
                 }
 
                 filter = when (checkedId) {
-                    R.id.chipSparepart ->
-                        KategoriPromo.SPAREPART
-
-                    R.id.chipPoin ->
-                        KategoriPromo.POIN
-
-                    else ->
-                        KategoriPromo.SERVIS
+                    R.id.chipServis -> KategoriPromo.SERVIS
+                    R.id.chipSparepart -> KategoriPromo.SPAREPART
+                    R.id.chipPoin -> KategoriPromo.POIN
+                    else -> null // chipSemua
                 }
 
                 render()
             }
     }
 
-    private fun styleChip(
-        chip: Chip,
-        selected: Boolean
-    ) {
-        val primary = ContextCompat.getColor(
-            this,
-            R.color.bk_primary
-        )
+    private fun styleChip(chip: Chip, selected: Boolean) {
+        val primary = ContextCompat.getColor(this, R.color.bk_primary)
 
         chip.chipBackgroundColor =
-            ColorStateList.valueOf(
-                if (selected) primary else Color.WHITE
-            )
+            ColorStateList.valueOf(if (selected) primary else Color.WHITE)
 
-        chip.setTextColor(
-            if (selected) Color.WHITE else primary
-        )
+        chip.setTextColor(if (selected) Color.WHITE else primary)
     }
 
     private fun setupKartuPoinVoucher() {
         binding.cardPoin.setOnClickListener {
-            startActivity(
-                Intent(
-                    this,
-                    RiwayatPoinCustActivity::class.java
-                )
-            )
+            startActivity(Intent(this, RiwayatPoinCustActivity::class.java))
         }
 
         binding.cardVoucherSaya.setOnClickListener {
-            startActivity(
-                Intent(
-                    this,
-                    VoucherSayaActivity::class.java
-                )
-            )
+            startActivity(Intent(this, VoucherSayaActivity::class.java))
         }
+    }
+
+    /** Pindah tab tanpa animasi & tanpa menumpuk activity (sama seperti Home). */
+    private fun openTab(target: Class<*>) {
+        startActivity(
+            Intent(this, target).addFlags(
+                Intent.FLAG_ACTIVITY_CLEAR_TOP or
+                        Intent.FLAG_ACTIVITY_SINGLE_TOP or
+                        Intent.FLAG_ACTIVITY_NO_ANIMATION
+            )
+        )
     }
 
     private fun setupBottomNav() {
         binding.bottomNav.selectedItemId = R.id.nav_promo
 
+        binding.fabBooking.setOnClickListener {
+            startActivity(Intent(this, LayananActivity::class.java))
+        }
+
         binding.bottomNav.setOnItemSelectedListener { item ->
             when (item.itemId) {
-                R.id.nav_home -> {
-                    startActivity(
-                        Intent(
-                            this,
-                            HomeActivityCustomer::class.java
-                        ).addFlags(
-                            Intent.FLAG_ACTIVITY_CLEAR_TOP or
-                                    Intent.FLAG_ACTIVITY_SINGLE_TOP
-                        )
-                    )
-
-                    overridePendingTransition(0, 0)
-                    false
-                }
-
+                R.id.nav_home -> { openTab(HomeActivityCustomer::class.java); false }
                 R.id.nav_promo -> true
-
-                R.id.nav_bengkel -> {
-                    toast("Peta bengkel")
-                    false
-                }
-
-                R.id.nav_account -> {
-                    startActivity(
-                        Intent(
-                            this,
-                            AccountActivity::class.java
-                        )
-                    )
-                    false
-                }
-
+                R.id.nav_bengkel -> { openTab(BengkelActivityCustomer::class.java); false }
+                R.id.nav_account -> { openTab(AccountActivity::class.java); false }
                 else -> false
             }
         }
+
+        // Tap tab yang sudah aktif: tidak melakukan apa-apa
+        binding.bottomNav.setOnItemReselectedListener { }
     }
 
     private fun toast(msg: String) {
-        Toast.makeText(
-            this,
-            msg,
-            Toast.LENGTH_SHORT
-        ).show()
+        Toast.makeText(this, msg, Toast.LENGTH_SHORT).show()
     }
 }

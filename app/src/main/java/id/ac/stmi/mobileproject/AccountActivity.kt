@@ -37,7 +37,6 @@ class AccountActivity : AppCompatActivity() {
 
     companion object {
         // Nomor WhatsApp customer care. Format internasional, TANPA "+" dan TANPA 0 di depan.
-        // Contoh: 0812-3456-7890 -> "6281234567890"
         private const val CS_WHATSAPP_NUMBER = "6285156210062"
     }
 
@@ -56,7 +55,7 @@ class AccountActivity : AppCompatActivity() {
             return
         }
 
-        setupTopBar(showNotificationDot = true) // dari TopBarHelper.kt
+        setupTopBar(showNotificationDot = true)
         setupMenus()
         setupClicks()
         setupBottomNav()
@@ -64,6 +63,19 @@ class AccountActivity : AppCompatActivity() {
         listenUser(uid)
         listenVehicles(uid)
         showActiveService(null)
+    }
+
+    override fun onResume() {
+        super.onResume()
+        // Memastikan ikon tab Akun tetap terpilih saat kembali ke halaman ini
+        binding.bottomNav.menu.findItem(R.id.nav_account)?.isChecked = true
+    }
+
+    // Hilangkan animasi bawaan saat activity ditutup agar perpindahan tab mulus
+    override fun finish() {
+        super.finish()
+        @Suppress("DEPRECATION")
+        overridePendingTransition(0, 0)
     }
 
     // ------------------------------------------------------------------
@@ -91,7 +103,6 @@ class AccountActivity : AppCompatActivity() {
             }
     }
 
-    /** "Budi Santoso" -> "BS", "Budi" -> "B" */
     private fun initialsOf(name: String): String =
         name.trim().split(" ")
             .filter { it.isNotBlank() }
@@ -114,7 +125,6 @@ class AccountActivity : AppCompatActivity() {
                 }
                 binding.tvStatCars.text = list.size.toString()
 
-                // Pilih mobil utama; kalau tidak ada, ambil yang pertama
                 currentVehicle = list.firstOrNull { it.primary } ?: list.firstOrNull()
                 showVehicle(currentVehicle)
             }
@@ -131,7 +141,6 @@ class AccountActivity : AppCompatActivity() {
         binding.chipPrimary.visibility = if (v.primary) View.VISIBLE else View.GONE
         binding.tvOdometer.text = "${idFormat.format(v.odometer)} km"
 
-        // Servis berikutnya = odometer servis terakhir + jarak interval
         val nextKm = v.lastServiceOdometer + v.serviceIntervalKm
         binding.tvNextService.text = "${idFormat.format(nextKm)} km"
     }
@@ -139,10 +148,6 @@ class AccountActivity : AppCompatActivity() {
     // ------------------------------------------------------------------
     // 3. SERVIS SEDANG BERJALAN
     // ------------------------------------------------------------------
-    /**
-     * detail == null -> kartu disembunyikan, "Servis Aktif" = 0
-     * Contoh: showActiveService("Honda HR-V • Pengerjaan Berkala")
-     */
     private fun showActiveService(detail: String?) {
         val ada = detail != null
         binding.cardActiveService.visibility = if (ada) View.VISIBLE else View.GONE
@@ -154,7 +159,6 @@ class AccountActivity : AppCompatActivity() {
     // 4. BARIS MENU
     // ------------------------------------------------------------------
     private fun setupMenus() {
-        // --- Layanan & Akun ---
         bindMenu(binding.menuHistory, R.drawable.ic_receipt,
             R.string.menu_riwayat_title, R.string.menu_riwayat_sub) {
             startActivity(Intent(this, RiwayatBookingActivityCustomer::class.java))
@@ -172,7 +176,6 @@ class AccountActivity : AppCompatActivity() {
             toast("Pengaturan & notifikasi")
         }
 
-        // --- Bantuan & Informasi ---
         bindMenu(binding.menuCare, R.drawable.ic_headset,
             R.string.menu_cs_title, R.string.menu_cs_sub) {
             openWhatsApp("Halo Annova AutoCare, saya ingin konsultasi teknis mengenai kendaraan saya.")
@@ -187,11 +190,6 @@ class AccountActivity : AppCompatActivity() {
         }
     }
 
-    /**
-     * Buka chat WhatsApp ke nomor customer care dengan pesan yang sudah terisi.
-     * Memakai link https://wa.me/... : kalau WhatsApp terpasang, langsung terbuka di aplikasinya;
-     * kalau tidak, terbuka di browser.
-     */
     private fun openWhatsApp(message: String) {
         val url = "https://wa.me/$CS_WHATSAPP_NUMBER?text=${Uri.encode(message)}"
         try {
@@ -201,7 +199,6 @@ class AccountActivity : AppCompatActivity() {
         }
     }
 
-    /** Mengisi satu baris menu (item_menu_row.xml): ikon, judul, subjudul, dan aksi klik. */
     private fun bindMenu(
         row: ItemMenuRowBinding,
         iconRes: Int,
@@ -226,8 +223,9 @@ class AccountActivity : AppCompatActivity() {
         binding.btnAddCar.setOnClickListener {
             startActivity(Intent(this, AddVehicleActivityCustomer::class.java))
         }
-        binding.btnManageCar.setOnClickListener { startActivity(Intent(this,
-            MyVehiclesActivityCustomer::class.java)) }
+        binding.btnManageCar.setOnClickListener {
+            startActivity(Intent(this, MyVehiclesActivityCustomer::class.java))
+        }
         binding.btnBookService.setOnClickListener {
             startActivity(Intent(this, LayananActivity::class.java))
         }
@@ -238,7 +236,7 @@ class AccountActivity : AppCompatActivity() {
     }
 
     // ------------------------------------------------------------------
-    // 6. BOTTOM NAVIGATION
+    // 6. BOTTOM NAVIGATION (Dioptimalkan agar smooth)
     // ------------------------------------------------------------------
     private fun setupBottomNav() {
         binding.bottomNav.selectedItemId = R.id.nav_account
@@ -247,24 +245,34 @@ class AccountActivity : AppCompatActivity() {
             when (item.itemId) {
                 R.id.nav_account -> true
                 R.id.nav_home -> {
-                    // Pakai Beranda yang sudah ada di tumpukan, lalu tutup halaman Akun
-                    startActivity(
-                        Intent(this, HomeActivityCustomer::class.java)
-                            .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
-                    )
-                    finish()
-                    true
+                    openTab(HomeActivityCustomer::class.java)
+                    false
                 }
-                R.id.nav_promo -> { startActivity(
-                    Intent(this, PromoActivityCustomer::class.java)
-                        .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
-                )
-                    finish()
-                    true }
-                R.id.nav_bengkel -> { toast("Peta bengkel"); true }
+                R.id.nav_promo -> {
+                    openTab(PromoActivityCustomer::class.java)
+                    false
+                }
+                R.id.nav_bengkel -> {
+                    openTab(BengkelActivityCustomer::class.java)
+                    false
+                }
                 else -> false
             }
         }
+        // Mencegah reload ketika tab yang sedang aktif ditekan kembali
+        binding.bottomNav.setOnItemReselectedListener { }
+    }
+
+    /** Fungsi pembantu untuk pindah tab secara instan tanpa animasi kedip */
+    private fun openTab(target: Class<*>) {
+        startActivity(
+            Intent(this, target).addFlags(
+                Intent.FLAG_ACTIVITY_CLEAR_TOP or
+                        Intent.FLAG_ACTIVITY_SINGLE_TOP or
+                        Intent.FLAG_ACTIVITY_NO_ANIMATION
+            )
+        )
+        finish()
     }
 
     // ------------------------------------------------------------------
@@ -283,7 +291,6 @@ class AccountActivity : AppCompatActivity() {
     }
 
     private fun goToLogin() {
-        // CLEAR_TASK + NEW_TASK: tombol Back tidak bisa kembali ke halaman akun
         startActivity(
             Intent(this, LoginActivity::class.java)
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)

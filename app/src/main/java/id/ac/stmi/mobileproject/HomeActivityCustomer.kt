@@ -99,6 +99,12 @@ class HomeActivityCustomer : AppCompatActivity() {
         bookingsReg = listenBookings(uid)
     }
 
+    override fun onResume() {
+        super.onResume()
+        // Tab Beranda tetap terpilih setelah kembali dari tab lain
+        binding.bottomNav.menu.findItem(R.id.nav_home)?.isChecked = true
+    }
+
     override fun onStop() {
         super.onStop()
         promoListener?.remove()
@@ -111,9 +117,18 @@ class HomeActivityCustomer : AppCompatActivity() {
         bookingsReg = null
     }
 
+    // Hilangkan animasi saat activity ditutup (back) supaya perpindahan tab mulus
+    override fun finish() {
+        super.finish()
+        @Suppress("DEPRECATION")
+        overridePendingTransition(0, 0)
+    }
+
     /** Promo dari PromoStore (data yang sama dengan yang dibuat petugas) */
     private fun tampilPromo(semua: List<PromoItem>) {
-        val aktif = semua.filter { it.berakhir >= System.currentTimeMillis() }
+        // Hanya promo yang sedang berlaku (sudah mulai & belum berakhir)
+        val sekarang = System.currentTimeMillis()
+        val aktif = semua.filter { it.mulai <= sekarang && it.berakhir >= sekarang }
         val wadah = binding.promoContainer
         wadah.removeAllViews()
         binding.tvPromoHeader.visibility = if (aktif.isEmpty()) View.GONE else View.VISIBLE
@@ -135,9 +150,14 @@ class HomeActivityCustomer : AppCompatActivity() {
                 orientation = LinearLayout.VERTICAL
                 setBackgroundColor(Color.parseColor("#99000000"))
                 setPadding(dp(14), dp(8), dp(14), dp(10))
-                addView(teks(p.labelDiskon, 26f))
+                val label = when {
+                    p.jenisDiskon.equals("Persen", ignoreCase = true) -> "${p.nilai}%"
+                    p.nilai > 0L -> "Rp ${idFormat.format(p.nilai)}"
+                    else -> "GRATIS"
+                }
+                addView(teks(label, 26f))
                 addView(teks(p.judul, 15f))
-                addView(teks("s/d ${p.berakhir.toTanggal()}", 12f))
+                addView(teks("Kode: ${p.kode} • s/d ${p.berakhir.toTanggal()}", 12f))
             }
             val kartu = MaterialCardView(this).apply {
                 layoutParams = LinearLayout.LayoutParams(dp(320), dp(170))
@@ -255,8 +275,7 @@ class HomeActivityCustomer : AppCompatActivity() {
             startActivity(Intent(this, LayananActivity::class.java))
         }
         binding.menuBengkel.setOnClickListener {
-            startActivity(Intent(this,
-            BengkelListActivityCustomer::class.java))
+            startActivity(Intent(this, BengkelListActivityCustomer::class.java))
         }
         binding.menuRiwayat.setOnClickListener {
             startActivity(Intent(this, RiwayatBookingActivityCustomer::class.java))
@@ -277,28 +296,25 @@ class HomeActivityCustomer : AppCompatActivity() {
         binding.bottomNav.setOnItemSelectedListener { item ->
             when (item.itemId) {
                 R.id.nav_home -> true
-                R.id.nav_promo -> {
-                    startActivity(
-                        Intent(this, PromoActivityCustomer::class.java)
-                            .addFlags(
-                                Intent.FLAG_ACTIVITY_CLEAR_TOP or
-                                        Intent.FLAG_ACTIVITY_SINGLE_TOP
-                            )
-                    )
-                    overridePendingTransition(0, 0)
-                    false
-                }
-                R.id.nav_bengkel -> {
-                    startActivity(Intent(this, BengkelActivityCustomer::class.java))
-                    false
-                }
-                R.id.nav_account -> {
-                    startActivity(Intent(this, AccountActivity::class.java))
-                    false // false = tab Beranda tetap terpilih di halaman ini
-                }
+                R.id.nav_promo -> { openTab(PromoActivityCustomer::class.java); false }
+                R.id.nav_bengkel -> { openTab(BengkelActivityCustomer::class.java); false }
+                R.id.nav_account -> { openTab(AccountActivity::class.java); false }
                 else -> false
             }
         }
+        // Tap tab yang sudah aktif: tidak melakukan apa-apa
+        binding.bottomNav.setOnItemReselectedListener { }
+    }
+
+    /** Pindah tab tanpa animasi & tanpa menumpuk activity */
+    private fun openTab(target: Class<*>) {
+        startActivity(
+            Intent(this, target).addFlags(
+                Intent.FLAG_ACTIVITY_CLEAR_TOP or
+                        Intent.FLAG_ACTIVITY_SINGLE_TOP or
+                        Intent.FLAG_ACTIVITY_NO_ANIMATION
+            )
+        )
     }
 
     private fun goToLogin() {

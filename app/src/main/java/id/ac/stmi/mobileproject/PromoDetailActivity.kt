@@ -1,4 +1,3 @@
-
 package id.ac.stmi.mobileproject
 
 import android.content.Intent
@@ -49,6 +48,10 @@ class PromoDetailActivity : AppCompatActivity() {
         }
     }
 
+    /** Teks tombol klaim: promo poin menampilkan jumlah poin yang ditukar. */
+    private fun teksKlaim(promo: PromoItem): String =
+        if (promo.bisaDitukarPoin) "Tukar ${promo.labelPoin}" else "Klaim"
+
     private fun tampilkan(promo: PromoItem) {
         findViewById<ImageView>(R.id.imgBanner)
             .setImageResource(drawableId(promo.gambar))
@@ -56,8 +59,9 @@ class PromoDetailActivity : AppCompatActivity() {
         findViewById<TextView>(R.id.tvPromoJudul).text =
             promo.judul
 
+        val infoPoin = if (promo.bisaDitukarPoin) " · Tukar ${promo.labelPoin}" else ""
         findViewById<TextView>(R.id.tvPromoMeta).text =
-            "Berlaku s/d ${promo.berakhir.toTanggal()} · ${promo.kategori.label}"
+            "Berlaku s/d ${promo.berakhir.toTanggal()} · ${promo.kategori.label}$infoPoin"
 
         findViewById<TextView>(R.id.tvKodePromo).text =
             promo.kode
@@ -79,13 +83,23 @@ class PromoDetailActivity : AppCompatActivity() {
                 return@setOnClickListener
             }
 
+            // Toast info: berapa poin yang harus ditukar
+            if (promo.bisaDitukarPoin) {
+                toast("Promo ini butuh ${promo.labelPoin} untuk ditukar")
+            }
+
+            val pesan = if (promo.bisaDitukarPoin) {
+                "\"${promo.judul}\" akan masuk ke Voucher Saya.\n\n" +
+                        "Poin Anda akan dikurangi ${promo.labelPoin}."
+            } else {
+                "\"${promo.judul}\" akan masuk ke Voucher Saya."
+            }
+
             MaterialAlertDialogBuilder(this)
-                .setTitle("Klaim promo ini?")
-                .setMessage(
-                    "\"${promo.judul}\" akan masuk ke Voucher Saya."
-                )
+                .setTitle(if (promo.bisaDitukarPoin) "Tukar poin dengan voucher?" else "Klaim promo ini?")
+                .setMessage(pesan)
                 .setNegativeButton("Batal", null)
-                .setPositiveButton("Klaim") { _, _ ->
+                .setPositiveButton(if (promo.bisaDitukarPoin) "Tukar" else "Klaim") { _, _ ->
                     prosesKlaim(promo)
                 }
                 .show()
@@ -106,7 +120,7 @@ class PromoDetailActivity : AppCompatActivity() {
             if (sudah) {
                 aturTombol("Sudah diklaim", aktif = false)
             } else {
-                aturTombol("Klaim", aktif = true)
+                aturTombol(teksKlaim(promo), aktif = true)
             }
         }
     }
@@ -120,7 +134,12 @@ class PromoDetailActivity : AppCompatActivity() {
             when (hasil) {
                 VoucherStore.Hasil.SUKSES -> {
                     aturTombol("Sudah diklaim", aktif = false)
-                    toast("Promo berhasil diklaim! Cek Voucher Saya.")
+                    toast(
+                        if (promo.bisaDitukarPoin)
+                            "Berhasil! ${promo.labelPoin} dipakai. Cek Voucher Saya."
+                        else
+                            "Promo berhasil diklaim! Cek Voucher Saya."
+                    )
                 }
 
                 VoucherStore.Hasil.SUDAH_DIKLAIM -> {
@@ -133,8 +152,13 @@ class PromoDetailActivity : AppCompatActivity() {
                     toast("Promo sudah berakhir")
                 }
 
+                VoucherStore.Hasil.POIN_KURANG -> {
+                    aturTombol(teksKlaim(promo), aktif = true)
+                    toast("Poin Anda tidak mencukupi. Dibutuhkan ${promo.labelPoin}.")
+                }
+
                 VoucherStore.Hasil.GAGAL -> {
-                    aturTombol("Klaim", aktif = true)
+                    aturTombol(teksKlaim(promo), aktif = true)
                     toast("Gagal klaim promo. Periksa koneksi atau izin Firestore.")
                 }
             }

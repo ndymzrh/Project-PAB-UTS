@@ -11,10 +11,22 @@ import androidx.appcompat.app.AppCompatActivity
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
+import id.ac.stmi.mobileproject.BookingPetugasActivity
+import id.ac.stmi.mobileproject.BookingPetugasAdapter
+import id.ac.stmi.mobileproject.BookingRecord
+import id.ac.stmi.mobileproject.BookingRepository
+import id.ac.stmi.mobileproject.BookingStatus
+import id.ac.stmi.mobileproject.LoginActivity
+import id.ac.stmi.mobileproject.PetugasPelangganActivity
+import id.ac.stmi.mobileproject.SemuaMenuActivityPetugas
+import id.ac.stmi.mobileproject.applySystemBarInsets
 import id.ac.stmi.mobileproject.databinding.ActivityHomePetugasBinding
+import id.ac.stmi.mobileproject.keRupiah
+import id.ac.stmi.mobileproject.setupTopBar
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
+import kotlin.collections.filter
 
 class HomeActivityPetugas : AppCompatActivity() {
 
@@ -144,7 +156,11 @@ class HomeActivityPetugas : AppCompatActivity() {
                 R.id.nav_home -> true
                 R.id.nav_booking -> { startActivity(Intent(this, BookingPetugasActivity::class.java)); false }
                 R.id.nav_servis -> { toast("Servis"); false }
-                R.id.nav_account -> { toast("Akun"); false }
+                R.id.nav_account -> {
+                    startActivity(Intent(this, AccountPetugasActivity::class.java))
+                    true
+
+                }
                 else -> false
             }
         }

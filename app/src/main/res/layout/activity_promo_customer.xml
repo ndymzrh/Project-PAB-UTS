@@ -8,7 +8,7 @@
     android:orientation="vertical"
     tools:context=".PromoActivityCustomer">
 
-    <!-- ============ TOP BAR (selalu di atas, tidak ikut scroll) ============ -->
+    <!-- TOP BAR -->
     <include
         layout="@layout/include_top_bar"
         android:layout_width="match_parent"
@@ -29,6 +29,7 @@
             android:layout_height="wrap_content"
             android:orientation="vertical">
 
+            <!-- KARTU POIN DAN VOUCHER -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -38,6 +39,7 @@
                 android:baselineAligned="false"
                 android:orientation="horizontal">
 
+                <!-- KARTU POIN -->
                 <com.google.android.material.card.MaterialCardView
                     android:id="@+id/cardPoin"
                     android:layout_width="0dp"
@@ -63,8 +65,9 @@
                             android:textColor="@android:color/white"
                             android:textSize="12sp" />
 
+                        <!-- ANGKA POIN DAN LABEL -->
                         <LinearLayout
-                            android:layout_width="wrap_content"
+                            android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="6dp"
                             android:gravity="bottom"
@@ -88,6 +91,7 @@
                                 android:textColor="@android:color/white"
                                 android:textSize="14sp"
                                 android:textStyle="bold" />
+
                         </LinearLayout>
 
                         <TextView
@@ -99,9 +103,11 @@
                             android:textColor="@color/bk_accent"
                             android:textSize="12sp"
                             android:textStyle="bold" />
+
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
 
+                <!-- KARTU VOUCHER -->
                 <com.google.android.material.card.MaterialCardView
                     android:id="@+id/cardVoucherSaya"
                     android:layout_width="0dp"
@@ -153,6 +159,7 @@
                                 android:text="@string/tersedia"
                                 android:textColor="@color/bk_text_secondary"
                                 android:textSize="14sp" />
+
                         </LinearLayout>
 
                         <TextView
@@ -164,10 +171,13 @@
                             android:textColor="@color/bk_accent"
                             android:textSize="12sp"
                             android:textStyle="bold" />
+
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
+
             </LinearLayout>
 
+            <!-- JUDUL PROMO -->
             <TextView
                 android:id="@+id/tvPromoHeader"
                 android:layout_width="wrap_content"
@@ -179,6 +189,7 @@
                 android:textSize="20sp"
                 android:textStyle="bold" />
 
+            <!-- FILTER KATEGORI -->
             <HorizontalScrollView
                 android:id="@+id/scrollKategori"
                 android:layout_width="match_parent"
@@ -198,16 +209,30 @@
                     app:singleSelection="true">
 
                     <com.google.android.material.chip.Chip
-                        android:id="@+id/chipServis"
+                        android:id="@+id/chipSemua"
                         style="@style/Widget.MaterialComponents.Chip.Filter"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:checked="true"
-                        android:text="@string/servis"
+                        android:text="Semua"
                         android:textColor="@android:color/white"
                         android:textStyle="bold"
                         app:checkedIconVisible="false"
                         app:chipBackgroundColor="@color/bk_primary"
+                        app:chipMinTouchTargetSize="0dp"
+                        app:chipStrokeColor="@color/bk_primary"
+                        app:chipStrokeWidth="1dp" />
+
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/chipServis"
+                        style="@style/Widget.MaterialComponents.Chip.Filter"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/servis"
+                        android:textColor="@color/bk_primary"
+                        android:textStyle="bold"
+                        app:checkedIconTint="@color/bk_primary"
+                        app:chipBackgroundColor="@android:color/white"
                         app:chipMinTouchTargetSize="0dp"
                         app:chipStrokeColor="@color/bk_primary"
                         app:chipStrokeWidth="1dp" />
@@ -239,9 +264,11 @@
                         app:chipMinTouchTargetSize="0dp"
                         app:chipStrokeColor="@color/bk_primary"
                         app:chipStrokeWidth="1dp" />
+
                 </com.google.android.material.chip.ChipGroup>
             </HorizontalScrollView>
 
+            <!-- DAFTAR PROMO -->
             <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/rvPromo"
                 android:layout_width="match_parent"
@@ -254,6 +281,7 @@
                 app:layoutManager="androidx.recyclerview.widget.GridLayoutManager"
                 app:spanCount="2" />
 
+            <!-- PESAN KETIKA KOSONG -->
             <TextView
                 android:id="@+id/tvKosong"
                 android:layout_width="match_parent"
@@ -264,9 +292,11 @@
                 android:textColor="@color/bk_text_secondary"
                 android:textSize="14sp"
                 android:visibility="gone" />
+
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>
 
+    <!-- BOTTOM NAVIGATION -->
     <FrameLayout
         android:id="@+id/navContainer"
         android:layout_width="match_parent"
@@ -282,7 +312,6 @@
             android:layout_marginTop="28dp"
             android:background="@android:color/white"
             app:elevation="0dp"
-            app:itemActiveIndicatorStyle="@null"
             app:itemIconTint="@color/bk_nav_item_color"
             app:itemTextColor="@color/bk_nav_item_color"
             app:labelVisibilityMode="labeled"
@@ -296,10 +325,11 @@
             android:layout_marginTop="4dp"
             android:contentDescription="@string/booking"
             android:src="@drawable/ic_calendar"
-            app:backgroundTint="@color/bk_accent"
             android:translationZ="12dp"
+            app:backgroundTint="@color/bk_accent"
             app:elevation="12dp"
             app:tint="@android:color/white" />
+
     </FrameLayout>
 
 </LinearLayout>

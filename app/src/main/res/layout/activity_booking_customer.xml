@@ -520,6 +520,64 @@
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
+            <!-- Penggunaan poin -->
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="14dp"
+                android:text="Gunakan poin"
+                android:textColor="@color/bk_text_primary"
+                android:textSize="14sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/tvCurrentPoints"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:text="Saldo tersedia: 0 poin"
+                android:textColor="@color/bk_text_secondary"
+                android:textSize="12sp" />
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/tilUsePoints"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:hint="Jumlah poin yang digunakan"
+                app:boxBackgroundMode="outline"
+                app:boxCornerRadiusBottomEnd="12dp"
+                app:boxCornerRadiusBottomStart="12dp"
+                app:boxCornerRadiusTopEnd="12dp"
+                app:boxCornerRadiusTopStart="12dp">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etUsePoints"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="number"
+                    android:maxLength="10" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnUseAllPoints"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:text="Gunakan semua poin"
+                android:textAllCaps="false"
+                app:backgroundTint="@color/bk_primary"
+                app:cornerRadius="10dp" />
+
+            <TextView
+                android:id="@+id/tvPointDiscount"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:text="Potongan poin: Rp0"
+                android:textColor="@color/bk_accent"
+                android:textStyle="bold" />
+
             <!-- ============ RINGKASAN BIAYA ============ -->
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
@@ -560,6 +618,14 @@
                         android:layout_marginTop="4dp"
                         android:text="Diskon: - Rp 0"
                         android:textColor="@color/bk_primary" />
+
+                    <TextView
+                        android:id="@+id/tvSummaryPoin"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:text="Potongan poin: - Rp 0"
+                        android:textColor="@color/bk_accent" />
 
                     <TextView
                         android:id="@+id/tvEstimatedPoints"

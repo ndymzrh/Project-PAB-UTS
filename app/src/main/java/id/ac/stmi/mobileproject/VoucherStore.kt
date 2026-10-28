@@ -1,4 +1,3 @@
-
 package id.ac.stmi.mobileproject
 
 import android.content.Context
@@ -11,6 +10,10 @@ import com.google.firebase.firestore.FirebaseFirestore
  * Voucher disimpan di koleksi Firestore "vouchers".
  * Document ID = UID pemilik + promoId.
  * Satu promo hanya dapat diklaim sekali oleh satu akun.
+ *
+ * Untuk promo kategori POIN, klaim memotong saldo poin customer
+ * (users/{uid}.points) dan mencatat riwayat poin keluar
+ * (users/{uid}/pointsTransactions, type = "REDEEM").
  */
 object VoucherStore {
 
@@ -20,6 +23,7 @@ object VoucherStore {
         SUKSES,
         SUDAH_DIKLAIM,
         BERAKHIR,
+        POIN_KURANG,
         GAGAL
     }
 
@@ -50,7 +54,8 @@ object VoucherStore {
         "nilaiDiskon" to nilaiDiskon,
         "dipakai" to dipakai,
         "tglKlaim" to tglKlaim,
-        "berakhir" to berakhir
+        "berakhir" to berakhir,
+        "layananIds" to layananIds
     )
 
     /**
@@ -70,7 +75,8 @@ object VoucherStore {
                 nilaiDiskon = getLong("nilaiDiskon") ?: 0L,
                 dipakai = getBoolean("dipakai") ?: false,
                 tglKlaim = getLong("tglKlaim") ?: 0L,
-                berakhir = getLong("berakhir") ?: 0L
+                berakhir = getLong("berakhir") ?: 0L,
+                layananIds = (get("layananIds") as? List<*>).orEmpty().filterIsInstance<String>()
             )
         } catch (e: Exception) {
             Log.e("VoucherStore", "Gagal membaca voucher $id", e)
@@ -130,81 +136,96 @@ object VoucherStore {
                 onResult(snapshot.exists())
             }
             .addOnFailureListener { error ->
-                Log.e(
-                    "VoucherStore",
-                    "Gagal memeriksa klaim promo $promoId",
-                    error
-                )
+                Log.e("VoucherStore", "Gagal memeriksa klaim promo $promoId", error)
                 onResult(false)
             }
     }
 
     /**
-     * Mengklaim promo dan menyimpan data diskon numeriknya.
+     * Mengklaim promo.
+     *
+     * Semuanya dalam satu transaction (atomik):
+     *  1. Baca data promo TERBARU dari Firestore (bukan dari objek di layar).
+     *  2. Tolak jika promo sudah berakhir atau voucher sudah pernah diklaim.
+     *  3. Jika promo kategori POIN: cek saldo poin customer.
+     *     Poin kurang -> POIN_KURANG, tidak ada data yang berubah.
+     *  4. Simpan voucher; untuk promo POIN, kurangi saldo dan catat riwayat poin keluar.
      */
     fun klaim(
         ctx: Context,
         p: PromoItem,
         onDone: (Hasil) -> Unit
     ) {
-        if (pemilik(ctx).isBlank()) {
+        val uid = pemilik(ctx)
+        if (uid.isBlank()) {
             onDone(Hasil.GAGAL)
             return
         }
 
-        if (p.berakhir < System.currentTimeMillis()) {
-            onDone(Hasil.BERAKHIR)
-            return
-        }
+        val promoRef = db.collection("promos").document(p.id)
+        val userRef = db.collection("users").document(uid)
+        val voucherRef = col.document(idDokumen(ctx, p.id))
+        val riwayatRef = userRef.collection("pointsTransactions").document()
 
-        val ref = col.document(idDokumen(ctx, p.id))
+        db.runTransaction { trx ->
+            // Semua READ dulu, baru WRITE (aturan Firestore transaction).
+            val promoSnap = trx.get(promoRef)
+            val voucherSnap = trx.get(voucherRef)
+            val userSnap = trx.get(userRef)
 
-        val baru = VoucherSaya(
-            id = ref.id,
-            promoId = p.id,
-            judul = p.judul,
-            label = p.labelDiskon,
-            kode = p.kode,
-            jenisDiskon = p.jenisDiskon,
-            nilaiDiskon = p.nilai,
-            dipakai = false,
-            tglKlaim = System.currentTimeMillis(),
-            berakhir = p.berakhir
-        )
+            val promo = PromoStore.dariDokumen(promoSnap)
+                ?: return@runTransaction Hasil.GAGAL
 
-        val map = baru.toMap(ctx)
-
-        ref.get()
-            .addOnSuccessListener { snap ->
-                if (snap.exists()) {
-                    onDone(Hasil.SUDAH_DIKLAIM)
-                } else {
-                    ref.set(map)
-                        .addOnSuccessListener {
-                            Log.d(
-                                "VoucherStore",
-                                "Voucher berhasil diklaim: ${p.kode}"
-                            )
-                            onDone(Hasil.SUKSES)
-                        }
-                        .addOnFailureListener { error ->
-                            Log.e(
-                                "VoucherStore",
-                                "Gagal menyimpan voucher ${p.kode}",
-                                error
-                            )
-                            onDone(Hasil.GAGAL)
-                        }
-                }
+            val now = System.currentTimeMillis()
+            if (promo.berakhir < now) {
+                return@runTransaction Hasil.BERAKHIR
             }
-            .addOnFailureListener { error ->
-                Log.e(
-                    "VoucherStore",
-                    "Gagal memeriksa voucher ${p.kode}",
-                    error
+            if (voucherSnap.exists()) {
+                return@runTransaction Hasil.SUDAH_DIKLAIM
+            }
+
+            val butuhPoin = promo.bisaDitukarPoin
+            val saldo = userSnap.getLong("points") ?: 0L
+
+            if (butuhPoin && saldo < promo.poinDibutuhkan) {
+                return@runTransaction Hasil.POIN_KURANG
+            }
+
+            val baru = VoucherSaya(
+                id = voucherRef.id,
+                promoId = promo.id,
+                judul = promo.judul,
+                label = promo.labelDiskon,
+                kode = promo.kode,
+                jenisDiskon = promo.jenisDiskon,
+                nilaiDiskon = promo.nilai,
+                dipakai = false,
+                tglKlaim = now,
+                berakhir = promo.berakhir,
+                layananIds = promo.layananIds
+            )
+            trx.set(voucherRef, baru.toMap(ctx))
+
+            if (butuhPoin) {
+                trx.update(userRef, "points", saldo - promo.poinDibutuhkan)
+                trx.set(
+                    riwayatRef, hashMapOf(
+                        "type" to "REDEEM",
+                        "points" to -promo.poinDibutuhkan,
+                        "description" to "Penukaran voucher ${promo.judul}",
+                        "bookingId" to "",
+                        "createdAt" to now
+                    )
                 )
-                onDone(Hasil.GAGAL)
             }
+
+            Hasil.SUKSES
+        }.addOnSuccessListener { hasil ->
+            onDone(hasil)
+        }.addOnFailureListener { error ->
+            Log.e("VoucherStore", "Gagal mengklaim voucher ${p.kode}", error)
+            onDone(Hasil.GAGAL)
+        }
     }
 
     /**
@@ -231,11 +252,7 @@ object VoucherStore {
         col.document(id)
             .update("dipakai", dipakai)
             .addOnFailureListener { error ->
-                Log.e(
-                    "VoucherStore",
-                    "Gagal memperbarui status voucher $id",
-                    error
-                )
+                Log.e("VoucherStore", "Gagal memperbarui status voucher $id", error)
             }
     }
 
@@ -260,11 +277,7 @@ object VoucherStore {
             .whereEqualTo("pemilik", uid)
             .addSnapshotListener { snap, error ->
                 if (error != null || snap == null) {
-                    Log.e(
-                        "VoucherStore",
-                        "Gagal memuat promo yang sudah diklaim",
-                        error
-                    )
+                    Log.e("VoucherStore", "Gagal memuat promo yang sudah diklaim", error)
                     onError()
                     return@addSnapshotListener
                 }

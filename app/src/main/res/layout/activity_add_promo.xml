@@ -129,6 +129,22 @@
                 </com.google.android.material.textfield.TextInputLayout>
             </LinearLayout>
 
+            <!-- Poin yang dibutuhkan -->
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/tilPoin"
+                style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="12dp"
+                android:hint="Poin yang dibutuhkan">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etPoin"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="number" />
+            </com.google.android.material.textfield.TextInputLayout>
+
             <!-- 4. Tanggal Mulai & Tanggal Berakhir (2 Kolom Berjajar) -->
             <LinearLayout
                 android:layout_width="match_parent"
@@ -174,21 +190,6 @@
                 </com.google.android.material.textfield.TextInputLayout>
             </LinearLayout>
 
-            <!-- 5. Layanan / Sparepart Berlaku (Full Width) -->
-            <com.google.android.material.textfield.TextInputLayout
-                android:id="@+id/tilBerlaku"
-                style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="12dp"
-                android:hint="Layanan / sparepart yang berlaku">
-
-                <com.google.android.material.textfield.TextInputEditText
-                    android:id="@+id/etBerlaku"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:inputType="textCapSentences" />
-            </com.google.android.material.textfield.TextInputLayout>
 
             <!-- 6. Syarat & Ketentuan (Textarea Besar) -->
             <com.google.android.material.textfield.TextInputLayout
@@ -210,6 +211,7 @@
 
             <!-- Tombol Simpan -->
             <com.google.android.material.button.MaterialButton
+                xml:id="@+id/btnSimpan"
                 android:id="@+id/btnSimpan"
                 android:layout_width="match_parent"
                 android:layout_height="52dp"

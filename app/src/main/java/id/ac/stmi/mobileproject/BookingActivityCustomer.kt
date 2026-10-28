@@ -15,11 +15,13 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.isVisible
 import androidx.core.view.updatePadding
+import androidx.core.widget.doAfterTextChanged
 import com.google.android.material.chip.Chip
-import com.google.android.material.textfield.MaterialAutoCompleteTextView
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
 import id.ac.stmi.mobileproject.databinding.ActivityBookingCustomerBinding
+import java.text.NumberFormat
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
@@ -30,9 +32,11 @@ class BookingActivityCustomer : AppCompatActivity() {
     private val auth by lazy { FirebaseAuth.getInstance() }
     private val dateStoreFormat = SimpleDateFormat("yyyy-MM-dd", Locale.US)
     private val jadwalFormat = SimpleDateFormat("EEEE, d MMMM yyyy", Locale("id", "ID"))
+    private val idFormat = NumberFormat.getIntegerInstance(Locale("id", "ID"))
     private val timeChips = linkedMapOf<String, Chip>()
 
     private var vehicleListener: ListenerRegistration? = null
+    private var pointsListener: ListenerRegistration? = null
     private var serviceLoaded = false
     private var vehicles: List<Vehicle> = emptyList()
     private var selectedVehicle: Vehicle? = null
@@ -41,11 +45,13 @@ class BookingActivityCustomer : AppCompatActivity() {
     private var selectedWorkshopName: String? = null
     private var selectedDateIso: String? = null
     private var selectedTime: String? = null
-    private var vouchers: List<VoucherSaya> = emptyList()
+    private var vouchers: List<VoucherSaya> = emptyList()          // voucher yang cocok dengan layanan terpilih
+    private var vouchersTersedia: List<VoucherSaya> = emptyList()  // semua voucher yang belum dipakai
     private var selectedVoucher: VoucherSaya? = null
     private var voucherListener: PromoListener? = null
     private var bookingId = BookingRepository.newBookingId()
     private var submitting = false
+    private var userPoints = 0L
 
     private val workshopLauncher =
         registerForActivityResult(androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult()) { result ->
@@ -60,11 +66,6 @@ class BookingActivityCustomer : AppCompatActivity() {
         enableEdgeToEdge(statusBarStyle = SystemBarStyle.dark(Color.TRANSPARENT))
         binding = ActivityBookingCustomerBinding.inflate(layoutInflater)
         setContentView(binding.root)
-        ViewCompat.setOnApplyWindowInsetsListener(binding.main) { view, insets ->
-            val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-            view.setPadding(bars.left, bars.top, bars.right, bars.bottom)
-            insets
-        }
         binding.actVehicle.setDropDownBackgroundResource(R.drawable.bg_dropdown_popup)
         binding.actVoucher.setDropDownBackgroundResource(R.drawable.bg_dropdown_popup)
 
@@ -105,10 +106,17 @@ class BookingActivityCustomer : AppCompatActivity() {
             renderTotals()
         }
 
+        // Poin
+        binding.etUsePoints.doAfterTextChanged { renderTotals() }
+        binding.btnUseAllPoints.setOnClickListener {
+            binding.etUsePoints.setText(maxUsablePoints().toString())
+        }
+
         renderSelectedDateTime()
         loadServices()
         loadVehicles()
         loadVouchers()
+        loadPoints()
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
@@ -121,6 +129,7 @@ class BookingActivityCustomer : AppCompatActivity() {
     override fun onDestroy() {
         vehicleListener?.remove()
         voucherListener?.remove()
+        pointsListener?.remove()
         super.onDestroy()
     }
 
@@ -145,6 +154,7 @@ class BookingActivityCustomer : AppCompatActivity() {
             binding.tvServiceSummary.text = selectedServices.joinToString("\n") {
                 "• ${it.judul} — ${it.harga.keRupiah()}"
             }
+            refreshVoucherOptions()
             renderTotals()
         }
     }
@@ -175,11 +185,66 @@ class BookingActivityCustomer : AppCompatActivity() {
 
     private fun loadVouchers() {
         voucherListener = VoucherStore.listen(this) { list ->
-            vouchers = list.filter { it.status() == StatusVoucher.TERSEDIA }
-            val labels = listOf("Tanpa voucher") + vouchers.map { "${it.judul} • ${it.label}" }
-            binding.actVoucher.setAdapter(ArrayAdapter(this, R.layout.item_dropdown, labels))
-            if (selectedVoucher == null) binding.actVoucher.setText(labels.first(), false)
+            vouchersTersedia = list.filter { it.status() == StatusVoucher.TERSEDIA }
+            refreshVoucherOptions()
+            renderTotals()
         }
+    }
+
+    /**
+     * Hanya voucher yang namanya SAMA/MIRIP dengan layanan terpilih yang bisa dipilih.
+     * Voucher untuk layanan lain disembunyikan.
+     */
+    private fun refreshVoucherOptions() {
+        val namaLayanan = selectedServices.map { it.judul }
+        vouchers = vouchersTersedia.filter { it.bisaDipakaiUntuk(namaLayanan) }
+
+        // Voucher yang sedang dipilih tapi tidak cocok lagi -> dilepas
+        if (selectedVoucher != null && vouchers.none { it.id == selectedVoucher?.id }) {
+            selectedVoucher = null
+        }
+
+        val labels = listOf("Tanpa voucher") + vouchers.map { "${it.judul} • ${it.label}" }
+        binding.actVoucher.setAdapter(ArrayAdapter(this, R.layout.item_dropdown, labels))
+        binding.actVoucher.setText(
+            selectedVoucher?.let { "${it.judul} • ${it.label}" } ?: labels.first(),
+            false
+        )
+    }
+
+    // ------------------------------------------------------------------
+    // POIN
+    // ------------------------------------------------------------------
+    private fun loadPoints() {
+        val uid = auth.currentUser?.uid ?: return
+        pointsListener = FirebaseFirestore.getInstance().collection("users").document(uid)
+            .addSnapshotListener(this) { snap, _ ->
+                userPoints = (snap?.get("points") as? Number)?.toLong() ?: 0L
+                binding.tvCurrentPoints.text = "Saldo tersedia: ${idFormat.format(userPoints)} poin"
+                renderTotals()
+            }
+    }
+
+    private fun subtotalServices(): Long = selectedServices.sumOf { it.harga }
+
+    /** Dasar diskon: voucher hanya memotong harga layanan yang namanya cocok. */
+    private fun dasarDiskon(voucher: VoucherSaya): Long =
+        selectedServices
+            .filter { voucher.bisaDipakaiUntuk(it.judul) }
+            .sumOf { it.harga }
+
+    private fun voucherDiscount(): Long =
+        selectedVoucher?.let { calculateDiscount(it, dasarDiskon(it)) } ?: 0L
+
+    private fun afterVoucher(): Long =
+        (subtotalServices() - voucherDiscount()).coerceAtLeast(0L)
+
+    private fun maxUsablePoints(): Long =
+        minOf(userPoints, afterVoucher() / BookingRepository.POINT_VALUE)
+
+    private fun pointsToUse(): Long {
+        val input = binding.etUsePoints.text?.toString()?.toLongOrNull() ?: 0L
+        return input.coerceIn(0L, maxUsablePoints())
     }
 
     // ------------------------------------------------------------------
@@ -261,20 +326,22 @@ class BookingActivityCustomer : AppCompatActivity() {
 
     private fun renderTotals() {
         if (!serviceLoaded) return
-        val subtotal = selectedServices.sumOf { it.harga }
-        val discount = selectedVoucher?.let { calculateDiscount(it, subtotal) } ?: 0L
-        val total = (subtotal - discount).coerceAtLeast(0L)
+        val subtotal = subtotalServices()
+        val discount = voucherDiscount()
+        val pointDiscount = pointsToUse() * BookingRepository.POINT_VALUE
+        val total = (subtotal - discount - pointDiscount).coerceAtLeast(0L)
         binding.tvSubtotal.text = "Subtotal: ${subtotal.keRupiah()}"
         binding.tvDiscount.text = "Diskon: - ${discount.keRupiah()}"
+        binding.tvPointDiscount.text = "Potongan poin: ${pointDiscount.keRupiah()}"
+        binding.tvSummaryPoin.text = "Potongan poin: - ${pointDiscount.keRupiah()}"
         binding.tvTotal.text = total.keRupiah()
         binding.tvEstimatedPoints.text = "${BookingRepository.estimatedPoints(total).keRupiah().removePrefix("Rp ")} points"
     }
 
-    private fun calculateDiscount(voucher: VoucherSaya, subtotal: Long): Long {
-        val label = voucher.label.trim()
-        val value = label.filter { it.isDigit() }.toLongOrNull() ?: return 0L
-        return if (label.contains("%")) subtotal * value / 100L else value
-    }
+    private fun calculateDiscount(voucher: VoucherSaya, subtotal: Long): Long =
+        BookingRepository.hitungDiskonVoucher(
+            voucher.jenisDiskon, voucher.nilaiDiskon, voucher.label, subtotal
+        )
 
     private fun submitBooking() {
         if (submitting) return
@@ -304,16 +371,14 @@ class BookingActivityCustomer : AppCompatActivity() {
                     bookingTime = time,
                     notes = binding.etNotes.text?.toString()?.trim().orEmpty(),
                     voucherId = selectedVoucher?.id,
-                    requestedDiscount = selectedVoucher?.let {
-                        calculateDiscount(it, selectedServices.sumOf { service -> service.harga })
-                    } ?: 0L
+                    requestedDiscount = voucherDiscount(),   // voucher saja
+                    pointsUsed = pointsToUse()               // poin dipotong atomic di create()
                 )
                 BookingRepository.create(
                     uid = uid,
                     bookingId = bookingId,
                     draft = draft,
                     onSuccess = {
-                        selectedVoucher?.let { VoucherStore.tandaiDipakai(this, it.id) }
                         startActivity(
                             Intent(this, BookingSuccessActivity::class.java)
                                 .putExtra(BookingSuccessActivity.EXTRA_BOOKING_ID, it)

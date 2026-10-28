@@ -764,7 +764,6 @@
             android:layout_height="wrap_content"
             android:background="@android:color/white"
             app:elevation="4dp"
-            app:itemActiveIndicatorStyle="@null"
             app:itemIconTint="@color/bk_nav_item_color"
             app:itemTextColor="@color/bk_nav_item_color"
             app:labelVisibilityMode="labeled"

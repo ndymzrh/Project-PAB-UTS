@@ -594,7 +594,6 @@
         android:layout_gravity="bottom"
         android:background="@android:color/white"
         app:elevation="12dp"
-        app:itemActiveIndicatorStyle="@null"
         app:itemIconTint="@color/bk_nav_item_color"
         app:itemTextColor="@color/bk_nav_item_color"
         app:labelVisibilityMode="labeled"

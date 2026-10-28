@@ -8,7 +8,7 @@
     android:orientation="vertical"
     tools:context=".PetugasPromoActivity">
 
-    <!-- ============ TOOLBAR DENGAN TOMBOL BACK ============ -->
+    <!-- ============ TOOLBAR PETUGAS ============ -->
     <com.google.android.material.appbar.MaterialToolbar
         android:id="@+id/toolbar"
         android:layout_width="match_parent"
@@ -16,6 +16,8 @@
         android:background="@color/bk_primary"
         app:navigationIcon="?attr/homeAsUpIndicator"
         app:navigationIconTint="@android:color/white"
+        app:subtitle="Panel Petugas"
+        app:subtitleTextColor="#CCFFFFFF"
         app:title="Kelola Promo"
         app:titleTextColor="@android:color/white" />
 
@@ -38,7 +40,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginStart="16dp"
                 android:layout_marginTop="22dp"
-                android:text="@string/promo_untuk_anda"
+                android:text="Daftar Promo"
                 android:textColor="@color/bk_primary"
                 android:textSize="20sp"
                 android:textStyle="bold" />
@@ -61,16 +63,30 @@
                     app:singleSelection="true">
 
                     <com.google.android.material.chip.Chip
-                        android:id="@+id/chipServis"
+                        android:id="@+id/chipSemua"
                         style="@style/Widget.MaterialComponents.Chip.Filter"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:checked="true"
-                        android:text="@string/servis"
+                        android:text="Semua"
                         android:textColor="@android:color/white"
                         android:textStyle="bold"
                         app:checkedIconVisible="false"
                         app:chipBackgroundColor="@color/bk_primary"
+                        app:chipMinTouchTargetSize="0dp"
+                        app:chipStrokeColor="@color/bk_primary"
+                        app:chipStrokeWidth="1dp" />
+
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/chipServis"
+                        style="@style/Widget.MaterialComponents.Chip.Filter"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/servis"
+                        android:textColor="@color/bk_primary"
+                        android:textStyle="bold"
+                        app:checkedIconVisible="false"
+                        app:chipBackgroundColor="@android:color/white"
                         app:chipMinTouchTargetSize="0dp"
                         app:chipStrokeColor="@color/bk_primary"
                         app:chipStrokeWidth="1dp" />
@@ -83,7 +99,7 @@
                         android:text="@string/sparepart"
                         android:textColor="@color/bk_primary"
                         android:textStyle="bold"
-                        app:checkedIconTint="@color/bk_primary"
+                        app:checkedIconVisible="false"
                         app:chipBackgroundColor="@android:color/white"
                         app:chipMinTouchTargetSize="0dp"
                         app:chipStrokeColor="@color/bk_primary"
@@ -97,7 +113,7 @@
                         android:text="Poin"
                         android:textColor="@color/bk_primary"
                         android:textStyle="bold"
-                        app:checkedIconTint="@color/bk_primary"
+                        app:checkedIconVisible="false"
                         app:chipBackgroundColor="@android:color/white"
                         app:chipMinTouchTargetSize="0dp"
                         app:chipStrokeColor="@color/bk_primary"
@@ -117,7 +133,6 @@
                 app:layoutManager="androidx.recyclerview.widget.GridLayoutManager"
                 app:spanCount="2" />
 
-            <!-- Tampil kalau belum ada promo aktif di kategori ini -->
             <TextView
                 android:id="@+id/tvKosong"
                 android:layout_width="match_parent"

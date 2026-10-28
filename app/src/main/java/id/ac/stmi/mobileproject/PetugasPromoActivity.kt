@@ -20,7 +20,7 @@ class PetugasPromoActivity : AppCompatActivity() {
     private lateinit var rvPromo: RecyclerView
     private lateinit var tvKosong: TextView
 
-    private var filter: KategoriPromo? = KategoriPromo.SERVIS // chip Servis terpilih di awal
+    private var filter: KategoriPromo? = null // null = Semua (chip Semua terpilih di awal)
     private var semuaPromo: List<PromoItem> = emptyList()
     private var promoListener: PromoListener? = null
 
@@ -35,7 +35,7 @@ class PetugasPromoActivity : AppCompatActivity() {
             startActivity(Intent(this, PetugasPromoTambahActivity::class.java))
         }
 
-        // Isi 4 promo contoh bila koleksi masih kosong
+        // Isi promo contoh bila koleksi masih kosong
         PromoStore.seedSekali(this)
     }
 
@@ -69,13 +69,19 @@ class PetugasPromoActivity : AppCompatActivity() {
 
     private fun setupFilter() {
         val chipGroup = findViewById<ChipGroup>(R.id.chipGroupKategori)
-        chipGroup.check(R.id.chipServis)
+
+        // Matikan ikon centang agar teks chip tidak bergeser saat dipilih
+        for (i in 0 until chipGroup.childCount) {
+            (chipGroup.getChildAt(i) as Chip).isCheckedIconVisible = false
+        }
+
+        chipGroup.check(R.id.chipSemua)
         chipGroup.setOnCheckedStateChangeListener { group, ids ->
             filter = when (ids.firstOrNull()) {
                 R.id.chipServis -> KategoriPromo.SERVIS
                 R.id.chipSparepart -> KategoriPromo.SPAREPART
                 R.id.chipPoin -> KategoriPromo.POIN
-                else -> null
+                else -> null // chipSemua
             }
             warnaiChip(group)
             render()

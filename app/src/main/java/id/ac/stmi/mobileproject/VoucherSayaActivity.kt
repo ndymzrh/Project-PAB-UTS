@@ -1,142 +1,102 @@
-
 package id.ac.stmi.mobileproject
 
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
+import android.content.Intent
 import android.os.Bundle
-import android.view.View
-import android.widget.LinearLayout
-import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.isVisible
 import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.recyclerview.widget.RecyclerView
-import com.google.android.material.appbar.MaterialToolbar
 import com.google.android.material.tabs.TabLayout
+import id.ac.stmi.mobileproject.databinding.ActivityVoucherSayaBinding
+import kotlin.jvm.java
 
 class VoucherSayaActivity : AppCompatActivity() {
 
-    private var filter = StatusVoucher.TERSEDIA
-    private var semua: List<VoucherSaya> = emptyList()
-    private var listener: PromoListener? = null
-
-    private lateinit var adapter: VoucherAdapter
-    private lateinit var tvKosong: LinearLayout
-    private lateinit var tvPesanKosong: TextView
-    private lateinit var tvTotalVoucher: TextView
+    private lateinit var binding: ActivityVoucherSayaBinding
+    private lateinit var voucherAdapter: VoucherAdapter
+    private var voucherListener: PromoListener? = null
+    private var semuaVoucher: List<VoucherSaya> = emptyList()
+    private var selectedTab = 0 // 0: Tersedia, 1: Terpakai, 2: Kedaluwarsa
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_voucher_saya)
+        binding = ActivityVoucherSayaBinding.inflate(layoutInflater)
+        setContentView(binding.root)
 
-        adapter = VoucherAdapter(
-            onSalin = { voucher ->
-                salin(voucher.kode)
-                toast("Kode ${voucher.kode} disalin")
+        binding.toolbar.setNavigationOnClickListener { finish() }
+
+        voucherAdapter = VoucherAdapter(
+            onSalin = { v ->
+                val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                val clip = ClipData.newPlainText("Kode Voucher", v.kode)
+                clipboard.setPrimaryClip(clip)
+                Toast.makeText(this, "Kode ${v.kode} disalin", Toast.LENGTH_SHORT).show()
             },
-            onPakai = { voucher ->
-                salin(voucher.kode)
-                toast("Kode disalin, tempel di halaman Booking")
-            }
-        )
-
-        // Toolbar
-        findViewById<MaterialToolbar>(R.id.toolbar)
-            .setNavigationOnClickListener {
-                finish()
-            }
-
-        tvTotalVoucher = findViewById(R.id.tvTotalVoucher)
-
-        // Daftar voucher
-        findViewById<RecyclerView>(R.id.rvVouchers).apply {
-            layoutManager = LinearLayoutManager(this@VoucherSayaActivity)
-            adapter = this@VoucherSayaActivity.adapter
-        }
-
-        // Tampilan ketika daftar voucher kosong
-        tvKosong = findViewById(R.id.tvKosong)
-        tvPesanKosong = tvKosong.getChildAt(1) as TextView
-
-        // Tab filter: Tersedia, Terpakai, Kedaluwarsa
-        val tabFilter = findViewById<TabLayout>(R.id.tabFilter)
-
-        tabFilter.addOnTabSelectedListener(
-            object : TabLayout.OnTabSelectedListener {
-
-                override fun onTabSelected(tab: TabLayout.Tab) {
-                    filter = StatusVoucher.values().getOrElse(tab.position) {
-                        StatusVoucher.TERSEDIA
-                    }
-                    render()
+            onPakai = { v ->
+                // Pilih layanan dulu; voucher dibawa sebagai extra
+                val intent = Intent(this, LayananActivity::class.java).apply {
+                    putExtra(EXTRA_VOUCHER_KODE, v.kode)
+                    putExtra(EXTRA_VOUCHER_JUDUL, v.judul)
                 }
-
-                override fun onTabUnselected(tab: TabLayout.Tab) = Unit
-
-                override fun onTabReselected(tab: TabLayout.Tab) = Unit
+                startActivity(intent)
             }
         )
+
+        binding.rvVouchers.layoutManager = LinearLayoutManager(this)
+        binding.rvVouchers.adapter = voucherAdapter
+
+        binding.tabFilter.addOnTabSelectedListener(object : TabLayout.OnTabSelectedListener {
+            override fun onTabSelected(tab: TabLayout.Tab) {
+                selectedTab = tab.position
+                render()
+            }
+            override fun onTabUnselected(tab: TabLayout.Tab) {}
+            override fun onTabReselected(tab: TabLayout.Tab) {}
+        })
     }
 
-    // Memuat voucher secara realtime dari Firestore
     override fun onStart() {
         super.onStart()
-
-        listener = VoucherStore.listen(
+        voucherListener = VoucherStore.listen(
             this,
             onError = {
-                toast("Gagal memuat voucher")
+                Toast.makeText(this, "Gagal memuat voucher", Toast.LENGTH_SHORT).show()
+            },
+            onChange = { list ->
+                semuaVoucher = list
+                render()
             }
-        ) { daftar ->
-            semua = daftar
-            render()
-        }
+        )
     }
 
     override fun onStop() {
-        listener?.remove()
-        listener = null
         super.onStop()
+        voucherListener?.remove()
+        voucherListener = null
     }
 
     private fun render() {
-        val daftar = semua.filter { it.status() == filter }
-
-        adapter.submitList(daftar)
-
-        tvTotalVoucher.text =
-            "${VoucherStore.jumlahTersedia(semua)} voucher"
-
-        tvPesanKosong.text = when (filter) {
-            StatusVoucher.TERSEDIA ->
-                "Belum ada voucher tersedia.\nKlaim promo di halaman Promo."
-
-            StatusVoucher.DIPAKAI ->
-                "Belum ada voucher yang terpakai."
-
-            StatusVoucher.KEDALUWARSA ->
-                "Tidak ada voucher kedaluwarsa."
+        val now = System.currentTimeMillis()
+        val filtered = when (selectedTab) {
+            0 -> semuaVoucher.filter { it.status(now) == StatusVoucher.TERSEDIA }
+            1 -> semuaVoucher.filter { it.status(now) == StatusVoucher.DIPAKAI }
+            2 -> semuaVoucher.filter { it.status(now) == StatusVoucher.KEDALUWARSA }
+            else -> semuaVoucher
         }
 
-        tvKosong.visibility =
-            if (daftar.isEmpty()) View.VISIBLE else View.GONE
+        val totalTersedia = semuaVoucher.count { it.status(now) == StatusVoucher.TERSEDIA }
+        binding.tvTotalVoucher.text = "$totalTersedia voucher"
+
+        voucherAdapter.submitList(filtered)
+        binding.rvVouchers.isVisible = filtered.isNotEmpty()
+        binding.tvKosong.isVisible = filtered.isEmpty()
     }
 
-    private fun salin(teks: String) {
-        val clipboard =
-            getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-
-        clipboard.setPrimaryClip(
-            ClipData.newPlainText("Kode voucher", teks)
-        )
-    }
-
-    private fun toast(pesan: String) {
-        Toast.makeText(
-            this,
-            pesan,
-            Toast.LENGTH_SHORT
-        ).show()
+    companion object {
+        const val EXTRA_VOUCHER_KODE = "EXTRA_VOUCHER_KODE"
+        const val EXTRA_VOUCHER_JUDUL = "EXTRA_VOUCHER_JUDUL"
     }
 }
