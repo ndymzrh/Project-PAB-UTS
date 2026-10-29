@@ -4,29 +4,18 @@ import android.content.Intent
 import android.os.Bundle
 import android.view.View
 import android.widget.Toast
-import androidx.core.view.isVisible
-import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.isVisible
+import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
-import id.ac.stmi.mobileproject.BookingPetugasActivity
-import id.ac.stmi.mobileproject.BookingPetugasAdapter
-import id.ac.stmi.mobileproject.BookingRecord
-import id.ac.stmi.mobileproject.BookingRepository
-import id.ac.stmi.mobileproject.BookingStatus
-import id.ac.stmi.mobileproject.LoginActivity
-import id.ac.stmi.mobileproject.PetugasPelangganActivity
-import id.ac.stmi.mobileproject.SemuaMenuActivityPetugas
-import id.ac.stmi.mobileproject.applySystemBarInsets
 import id.ac.stmi.mobileproject.databinding.ActivityHomePetugasBinding
-import id.ac.stmi.mobileproject.keRupiah
-import id.ac.stmi.mobileproject.setupTopBar
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
-import kotlin.collections.filter
+import kotlin.jvm.java
 
 class HomeActivityPetugas : AppCompatActivity() {
 
@@ -53,7 +42,8 @@ class HomeActivityPetugas : AppCompatActivity() {
         if (uid == null) {
             startActivity(
                 Intent(this, LoginActivity::class.java)
-                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK))
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+            )
             finish()
             return
         }
@@ -95,8 +85,8 @@ class HomeActivityPetugas : AppCompatActivity() {
         val running = bookings.count { it.status == BookingStatus.SEDANG_DISERVIS }
         val completedToday = bookings.count {
             it.status == BookingStatus.SELESAI &&
-                (it.completedAt?.let { timestamp -> dateFormat.format(timestamp.toDate()) == today }
-                    ?: (it.bookingDate == today))
+                    (it.completedAt?.let { timestamp -> dateFormat.format(timestamp.toDate()) == today }
+                        ?: (it.bookingDate == today))
         }
         val monthlyRevenue = bookings
             .filter { it.status == BookingStatus.SELESAI }
@@ -105,7 +95,7 @@ class HomeActivityPetugas : AppCompatActivity() {
                 if (completedAt != null) {
                     val completed = Calendar.getInstance().apply { time = completedAt.toDate() }
                     completed.get(Calendar.YEAR) == now.get(Calendar.YEAR) &&
-                        completed.get(Calendar.MONTH) == now.get(Calendar.MONTH)
+                            completed.get(Calendar.MONTH) == now.get(Calendar.MONTH)
                 } else {
                     booking.bookingDate.startsWith(today.substring(0, 7))
                 }
@@ -141,7 +131,11 @@ class HomeActivityPetugas : AppCompatActivity() {
         binding.menuPelanggan.setOnClickListener {
             startActivity(Intent(this, PetugasPelangganActivity::class.java))
         }
-        binding.cardLaporan.setOnClickListener { toast("Laporan pendapatan") }
+
+        // Kartu Laporan Pendapatan diarahkan ke LaporanPendapatanActivity
+        binding.cardLaporan.setOnClickListener {
+            startActivity(Intent(this, LaporanPendapatanActivity::class.java))
+        }
 
         // "Lihat semua" di samping judul Menu Cepat -> halaman semua menu
         binding.btnSemuaMenu.setOnClickListener {
@@ -155,11 +149,15 @@ class HomeActivityPetugas : AppCompatActivity() {
             when (item.itemId) {
                 R.id.nav_home -> true
                 R.id.nav_booking -> { startActivity(Intent(this, BookingPetugasActivity::class.java)); false }
-                R.id.nav_servis -> { toast("Servis"); false }
+                R.id.nav_servis -> {
+                    val isPemilik = binding.tvStaffRole.text.toString() == "Pemilik"
+                    val targetActivity = if (isPemilik) LaporanPendapatanActivity::class.java else LaporanPendapatanActivity::class.java
+                    startActivity(Intent(this, targetActivity))
+                    false
+                }
                 R.id.nav_account -> {
                     startActivity(Intent(this, AccountPetugasActivity::class.java))
                     true
-
                 }
                 else -> false
             }

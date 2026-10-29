@@ -179,6 +179,13 @@
             android:name=".AccountPetugasActivity"
             android:exported="false"
             android:windowSoftInputMode="adjustResize" />
+        <activity
+            android:name=".LaporanPendapatanActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
+        <activity
+            android:name=".EditProfilPetugasActivity"
+            android:exported="false" />
     </application>
 
 </manifest>
