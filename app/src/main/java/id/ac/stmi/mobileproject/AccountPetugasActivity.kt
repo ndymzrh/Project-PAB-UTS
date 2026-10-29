@@ -40,7 +40,6 @@ class AccountPetugasActivity : AppCompatActivity() {
         private val STATUS_SELESAI = listOf("SELESAI", "DISERAHKAN")
 
         private const val HALAMAN_ANTREAN = "BookingPetugasActivity"
-        private const val HALAMAN_AUDIT = "LaporanServisActivity"
         private const val HALAMAN_BANTUAN = "BantuanPetugasActivity"
         private const val HALAMAN_LAPORAN_PEMILIK = "LaporanPendapatanActivity"
         private const val HALAMAN_HOME = "HomeActivityPetugas"
@@ -81,6 +80,7 @@ class AccountPetugasActivity : AppCompatActivity() {
         setContentView(R.layout.activity_account_petugas)
 
         bindViews()
+        setupTopBar(showNotificationDot = false) // Mengikuti HomeActivityPetugas
         buildMenu()
         setupClicks()
         setupBottomNav()
@@ -102,6 +102,13 @@ class AccountPetugasActivity : AppCompatActivity() {
         listeners.forEach { it.remove() }
         listeners.clear()
         super.onStop()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        if (bottomNav.selectedItemId != R.id.nav_account) {
+            bottomNav.selectedItemId = R.id.nav_account
+        }
     }
 
     // ---------------------------------------------------------------- UI setup
@@ -163,13 +170,31 @@ class AccountPetugasActivity : AppCompatActivity() {
     private fun setupBottomNav() {
         bottomNav.selectedItemId = R.id.nav_account
         bottomNav.setOnItemSelectedListener { item ->
+            if (item.itemId == bottomNav.selectedItemId) {
+                return@setOnItemSelectedListener true
+            }
+
             when (item.itemId) {
-                R.id.nav_home -> { bukaHalaman(HALAMAN_HOME); true }
-                R.id.nav_booking -> { bukaHalaman(HALAMAN_ANTREAN); true }
+                R.id.nav_home -> {
+                    val intent = Intent(this, Class.forName("$PACKAGE.$HALAMAN_HOME")).apply {
+                        addFlags(Intent.FLAG_ACTIVITY_NO_ANIMATION)
+                    }
+                    startActivity(intent)
+                    overridePendingTransition(0, 0)
+                    false
+                }
+                R.id.nav_booking -> {
+                    val intent = Intent(this, Class.forName("$PACKAGE.$HALAMAN_ANTREAN")).apply {
+                        addFlags(Intent.FLAG_ACTIVITY_NO_ANIMATION)
+                    }
+                    startActivity(intent)
+                    overridePendingTransition(0, 0)
+                    false
+                }
                 R.id.nav_servis -> {
-                    // Jika pemilik, arahkan ke Laporan Pendapatan; jika petugas, ke Laporan/Audit Servis
-                    bukaHalaman(if (isPemilik) HALAMAN_LAPORAN_PEMILIK else HALAMAN_AUDIT)
-                    true
+                    toast("Kelola servis")
+                    bottomNav.post { bottomNav.selectedItemId = R.id.nav_account }
+                    false
                 }
                 R.id.nav_account -> true
                 else -> false
@@ -184,6 +209,30 @@ class AccountPetugasActivity : AppCompatActivity() {
             Log.e(TAG, "Activity $namaClass tidak ditemukan", e)
             toast("Halaman $namaClass belum tersedia")
         }
+    }
+
+    private fun keLogin() {
+        val intent = Intent(this, Class.forName("$PACKAGE.$HALAMAN_LOGIN")).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        }
+        startActivity(intent)
+        finish()
+    }
+
+    private fun konfirmasiLogout() {
+        AlertDialog.Builder(this)
+            .setTitle("Keluar Akun")
+            .setMessage("Apakah Anda yakin ingin keluar dari aplikasi?")
+            .setPositiveButton("Ya, Keluar") { _, _ ->
+                auth.signOut()
+                keLogin()
+            }
+            .setNegativeButton("Batal", null)
+            .show()
+    }
+
+    private fun tampilkanEditProfil() {
+        toast("Fitur edit profil dibuka")
     }
 
     // ---------------------------------------------------------------- Firebase
@@ -261,54 +310,22 @@ class AccountPetugasActivity : AppCompatActivity() {
         nama: String?, nip: String?, cabang: String?,
         shift: String?, aktif: Boolean, fallbackNama: String?
     ) {
-        val namaTampil = nama?.takeIf { it.isNotBlank() }
+        val namaTaniya = nama?.takeIf { it.isNotBlank() }
             ?: fallbackNama?.takeIf { it.isNotBlank() } ?: "Petugas"
 
-        tvStaffName.text = namaTampil
-        tvAvatarPetugas.text = inisial(namaTampil)
-        tvNip.text = nip.orEmpty().ifBlank { "-" }
-        tvBranch.text = cabang.orEmpty().ifBlank { "-" }
+        tvStaffName.text = namaTaniya
+        tvNip.text = nip?.takeIf { it.isNotBlank() } ?: "-"
+        tvBranch.text = cabang?.takeIf { it.isNotBlank() } ?: "-"
+        tvShift.text = shift?.takeIf { it.isNotBlank() } ?: "Shift Pagi"
+
         tvStatusAktif.text = if (aktif) "Aktif" else "Nonaktif"
-        tvShift.text = shift.orEmpty().ifBlank { "Shift Pagi" }
+        tvStatusAktif.setTextColor(
+            ContextCompat.getColor(this, if (aktif) R.color.bk_primary else R.color.bk_red_dot)
+        )
+
+        val inisial = namaTaniya.trim().take(1).uppercase()
+        tvAvatarPetugas.text = inisial.ifEmpty { "P" }
     }
 
-    private fun tampilkanEditProfil() {
-        startActivity(Intent(this, EditProfilPetugasActivity::class.java))
-    }
-
-    private fun konfirmasiLogout() {
-        AlertDialog.Builder(this)
-            .setTitle("Keluar")
-            .setMessage("Yakin ingin keluar dari akun ini?")
-            .setPositiveButton("Keluar") { _, _ ->
-                auth.signOut()
-                keLogin()
-            }
-            .setNegativeButton("Batal", null)
-            .show()
-    }
-
-    private fun keLogin() {
-        try {
-            startActivity(
-                Intent(this, Class.forName("$PACKAGE.$HALAMAN_LOGIN"))
-                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
-            )
-        } catch (e: ClassNotFoundException) {
-            Log.e(TAG, "LoginActivity tidak ditemukan", e)
-        }
-        finish()
-    }
-
-    private fun inisial(nama: String): String {
-        val kata = nama.trim().split(Regex("\\s+")).filter { it.isNotEmpty() }
-        return when {
-            kata.isEmpty() -> "P"
-            kata.size == 1 -> kata[0].take(1).uppercase()
-            else -> "${kata[0][0]}${kata[1][0]}".uppercase()
-        }
-    }
-
-    private fun toast(message: String) =
-        Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
+    private fun toast(msg: String) = Toast.makeText(this, msg, Toast.LENGTH_SHORT).show()
 }

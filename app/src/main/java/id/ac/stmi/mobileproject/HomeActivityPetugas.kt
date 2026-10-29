@@ -15,7 +15,6 @@ import id.ac.stmi.mobileproject.databinding.ActivityHomePetugasBinding
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
-import kotlin.jvm.java
 
 class HomeActivityPetugas : AppCompatActivity() {
 
@@ -62,6 +61,14 @@ class HomeActivityPetugas : AppCompatActivity() {
         bookingListener?.remove()
         bookingListener = null
         super.onStop()
+    }
+
+    // Pastikan item yang benar terpilih setiap kali activity kembali aktif (misal setelah tekan tombol Kembali)
+    override fun onResume() {
+        super.onResume()
+        if (binding.bottomNav.selectedItemId != R.id.nav_home) {
+            binding.bottomNav.selectedItemId = R.id.nav_home
+        }
     }
 
     private fun listenBookings() {
@@ -146,17 +153,33 @@ class HomeActivityPetugas : AppCompatActivity() {
 
         binding.bottomNav.selectedItemId = R.id.nav_home
         binding.bottomNav.setOnItemSelectedListener { item ->
+            // Cegah pemicu berulang jika tab yang sama sedang aktif
+            if (item.itemId == binding.bottomNav.selectedItemId) {
+                return@setOnItemSelectedListener true
+            }
+
             when (item.itemId) {
                 R.id.nav_home -> true
-                R.id.nav_booking -> { startActivity(Intent(this, BookingPetugasActivity::class.java)); false }
+                R.id.nav_booking -> {
+                    val intent = Intent(this, BookingPetugasActivity::class.java).apply {
+                        addFlags(Intent.FLAG_ACTIVITY_NO_ANIMATION)
+                    }
+                    startActivity(intent)
+                    overridePendingTransition(0, 0)
+                    false
+                }
                 R.id.nav_servis -> {
-                    val isPemilik = binding.tvStaffRole.text.toString() == "Pemilik"
-                    val targetActivity = if (isPemilik) LaporanPendapatanActivity::class.java else LaporanPendapatanActivity::class.java
-                    startActivity(Intent(this, targetActivity))
+                    toast("Kelola servis")
+                    // Kembalikan seleksi ke tab Home agar tidak salah nyala
+                    binding.bottomNav.post { binding.bottomNav.selectedItemId = R.id.nav_home }
                     false
                 }
                 R.id.nav_account -> {
-                    startActivity(Intent(this, AccountPetugasActivity::class.java))
+                    val intent = Intent(this, AccountPetugasActivity::class.java).apply {
+                        addFlags(Intent.FLAG_ACTIVITY_NO_ANIMATION)
+                    }
+                    startActivity(intent)
+                    overridePendingTransition(0, 0)
                     true
                 }
                 else -> false
