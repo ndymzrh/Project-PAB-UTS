@@ -10,6 +10,7 @@ import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
 import com.google.android.material.appbar.MaterialToolbar
 import com.google.android.material.badge.BadgeDrawable
 import com.google.android.material.badge.BadgeUtils
@@ -18,7 +19,10 @@ import com.google.android.material.badge.ExperimentalBadgeUtils
 fun Activity.setupTopBar(
     showNotificationDot: Boolean = false,
     onSupport: () -> Unit = { toastTopBar("Bantuan") },
-    onNotification: () -> Unit = { toastTopBar("Notifikasi") },
+    // DIUBAH: dulu toast("Notifikasi"), sekarang membuka halaman Notifikasi
+    onNotification: () -> Unit = {
+        startActivity(Intent(this@setupTopBar, NotificationActivity::class.java))
+    },
     onLogout: () -> Unit = { confirmLogout() }
 ): BadgeDrawable? {
 
@@ -40,6 +44,20 @@ fun Activity.setupTopBar(
     }
     toolbar.post {
         BadgeUtils.attachBadgeDrawable(badge, toolbar, R.id.action_notification)
+    }
+
+    // BARU: titik merah mengikuti data asli di Firestore.
+    // Muncul kalau ada notifikasi dengan dibaca == false, hilang kalau semuanya sudah dibaca.
+    // Listener otomatis berhenti saat halaman ditutup (dilepas ke Activity).
+    FirebaseAuth.getInstance().currentUser?.uid?.let { uid ->
+        FirebaseFirestore.getInstance()
+            .collection("users").document(uid)
+            .collection("notifications")
+            .whereEqualTo("dibaca", false)
+            .addSnapshotListener(this) { snap, error ->
+                if (error != null) return@addSnapshotListener
+                badge.isVisible = (snap?.size() ?: 0) > 0
+            }
     }
 
     return badge

@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Judul pengelompokan: "HARI INI ........ 24 Okt 2026" -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:gravity="center_vertical"
+    android:orientation="horizontal"
+    android:paddingTop="14dp"
+    android:paddingBottom="8dp">
+
+    <TextView
+        android:id="@+id/tvSection"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:letterSpacing="0.05"
+        android:text="HARI INI"
+        android:textColor="@color/bk_text_secondary"
+        android:textSize="12sp"
+        android:textStyle="bold" />
+
+    <TextView
+        android:id="@+id/tvDate"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="24 Okt 2026"
+        android:textColor="@color/bk_text_secondary"
+        android:textSize="12sp" />
+</LinearLayout>

@@ -186,6 +186,10 @@
         <activity
             android:name=".EditProfilPetugasActivity"
             android:exported="false" />
+        <activity
+            android:name=".NotificationActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
     </application>
 
 </manifest>
