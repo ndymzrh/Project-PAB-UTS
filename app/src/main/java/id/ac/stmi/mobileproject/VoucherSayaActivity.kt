@@ -6,8 +6,12 @@ import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import android.widget.Toast
+import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.isVisible
+import androidx.core.view.updatePadding
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.material.tabs.TabLayout
 import id.ac.stmi.mobileproject.databinding.ActivityVoucherSayaBinding
@@ -25,8 +29,17 @@ class VoucherSayaActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivityVoucherSayaBinding.inflate(layoutInflater)
         setContentView(binding.root)
+        enableEdgeToEdge()
+        binding.btnBack.setOnClickListener { finish() }
 
-        binding.toolbar.setNavigationOnClickListener { finish() }
+        val atasAwal = binding.header.paddingTop
+        val bawahAwal = binding.main.paddingBottom
+        ViewCompat.setOnApplyWindowInsetsListener(binding.main) { _, insets ->
+            val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+            binding.header.updatePadding(top = atasAwal + bars.top)
+            binding.main.updatePadding(bottom = bawahAwal + bars.bottom)
+            insets
+        }
 
         voucherAdapter = VoucherAdapter(
             onSalin = { v ->
