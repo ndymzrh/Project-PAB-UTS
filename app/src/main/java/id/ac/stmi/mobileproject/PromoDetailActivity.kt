@@ -9,10 +9,7 @@ import id.ac.stmi.mobileproject.databinding.ActivityPromoDetailBinding
 /**
  * Detail promo (customer).
  *
- * CATATAN: file ini DIREKONSTRUKSI dari layout activity_promo_detail.xml, karena file aslinya
- * belum dikirim. Bagian yang ditandai "SESUAIKAN" memakai nama yang saya tebak.
- * Kalau file PromoDetailActivity.kt lamamu sudah punya logika klaim yang jalan,
- * JANGAN ditimpa: cukup ambil baris tombol kembali di setupBack().
+ * Tombol "Klaim" memanggil VoucherStore.klaim(ctx, promo) { hasil -> ... }.
  */
 class PromoDetailActivity : AppCompatActivity() {
 
@@ -27,6 +24,9 @@ class PromoDetailActivity : AppCompatActivity() {
     private var voucherClaimListener: PromoListener? = null
     private var promoSudahDiklaim: Set<String> = emptySet()
     private var promoSaatIni: PromoItem? = null
+
+    /** True selama proses klaim berjalan, supaya tombol tidak bisa ditekan dua kali. */
+    private var sedangKlaim = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -87,7 +87,6 @@ class PromoDetailActivity : AppCompatActivity() {
     // ------------------------------------------------------------------ Tombol kembali
 
     private fun setupBack() {
-        // Tombol di atas banner. finish() otomatis kembali ke halaman yang membuka (daftar Promo).
         binding.btnBackPromo.setOnClickListener { finish() }
     }
 
@@ -105,14 +104,17 @@ class PromoDetailActivity : AppCompatActivity() {
         binding.tvPromoJudul.text = p.judul
         binding.tvPromoMeta.text = "${p.kategori.name} • s/d ${p.berakhir.toTanggal()}"
         binding.tvKodePromo.text = p.kode
-        binding.tvSyarat.text = p.syarat // SESUAIKAN: nama field syarat & ketentuan di PromoItem
+        binding.tvSyarat.text = p.syarat
 
         val sudahDiklaim = p.id in promoSudahDiklaim
         val kedaluwarsa = p.berakhir < System.currentTimeMillis()
-        binding.btnKlaim.isEnabled = !sudahDiklaim && !kedaluwarsa
+
+        binding.btnKlaim.isEnabled = !sudahDiklaim && !kedaluwarsa && !sedangKlaim
         binding.btnKlaim.text = when {
             sudahDiklaim -> "Diklaim"
             kedaluwarsa -> "Berakhir"
+            sedangKlaim -> "Memproses..."
+            p.bisaDitukarPoin -> "Tukar ${p.labelPoin}"
             else -> "Klaim"
         }
     }
@@ -121,9 +123,33 @@ class PromoDetailActivity : AppCompatActivity() {
 
     private fun klaim() {
         val p = promoSaatIni ?: return
-        // SESUAIKAN: panggil fungsi klaim yang sudah ada di VoucherStore milikmu,
-        // mis. VoucherStore.klaim(this, p, onSuccess = { ... }, onError = { ... })
-        toast("Hubungkan fungsi klaim untuk promo ${p.kode}")
+        if (sedangKlaim) return
+
+        sedangKlaim = true
+        render()
+
+        VoucherStore.klaim(this, p) { hasil ->
+            sedangKlaim = false
+
+            when (hasil) {
+                VoucherStore.Hasil.SUKSES -> {
+                    toast(
+                        if (p.bisaDitukarPoin) "Poin berhasil ditukar, voucher ditambahkan"
+                        else "Promo berhasil diklaim"
+                    )
+                    // Buka halaman Voucher Saya, lalu tutup detail promo supaya
+                    // tombol kembali di Voucher Saya mengarah ke daftar Promo
+                    startActivity(Intent(this, VoucherSayaActivity::class.java))
+                    finish()
+                }
+                VoucherStore.Hasil.SUDAH_DIKLAIM -> toast("Promo ini sudah kamu klaim")
+                VoucherStore.Hasil.BERAKHIR -> toast("Promo sudah berakhir")
+                VoucherStore.Hasil.POIN_KURANG -> toast("Poin kamu belum cukup untuk menukar promo ini")
+                VoucherStore.Hasil.GAGAL -> toast("Gagal mengklaim promo, coba lagi")
+            }
+
+            render()
+        }
     }
 
     // ------------------------------------------------------------------ Bottom nav
