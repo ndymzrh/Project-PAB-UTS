@@ -15,6 +15,7 @@
         android:padding="24dp">
 
         <ImageView
+            android:id="@+id/ivStatusIcon"
             android:layout_width="72dp"
             android:layout_height="72dp"
             android:layout_marginTop="36dp"
@@ -23,18 +24,22 @@
             app:tint="@color/bk_primary" />
 
         <TextView
+            android:id="@+id/tvHeading"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
+            android:gravity="center"
             android:text="Booking berhasil dibuat"
             android:textColor="@color/bk_primary"
             android:textSize="22sp"
             android:textStyle="bold" />
 
         <TextView
+            android:id="@+id/tvSubheading"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="6dp"
+            android:gravity="center"
             android:text="Simpan ID booking ini untuk ditunjukkan ke petugas."
             android:textColor="@color/bk_text_secondary"
             android:textSize="13sp" />
@@ -138,6 +143,22 @@
                     android:textSize="12sp" />
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
+
+        <!-- Muncul hanya saat status Selesai -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnInvoice"
+            android:layout_width="match_parent"
+            android:layout_height="52dp"
+            android:layout_marginTop="18dp"
+            android:insetTop="0dp"
+            android:insetBottom="0dp"
+            android:text="Lihat invoice"
+            android:textAllCaps="false"
+            android:textColor="@android:color/white"
+            android:textStyle="bold"
+            android:visibility="gone"
+            app:backgroundTint="@color/bk_primary"
+            app:cornerRadius="16dp" />
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnViewPoints"
