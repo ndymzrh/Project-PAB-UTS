@@ -29,12 +29,33 @@
             android:layout_height="wrap_content"
             android:orientation="vertical">
 
-            <ImageView
-                android:id="@+id/imgBanner"
+            <!-- Banner + tombol kembali melayang di pojok kiri atas -->
+            <FrameLayout
                 android:layout_width="match_parent"
-                android:layout_height="150dp"
-                android:contentDescription="Banner promo"
-                android:scaleType="centerCrop" />
+                android:layout_height="150dp">
+
+                <ImageView
+                    android:id="@+id/imgBanner"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:contentDescription="Banner promo"
+                    android:scaleType="centerCrop" />
+
+                <ImageView
+                    android:id="@+id/btnBackPromo"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:layout_gravity="top|start"
+                    android:layout_margin="12dp"
+                    android:background="@drawable/bg_badge_white"
+                    android:clickable="true"
+                    android:contentDescription="Kembali"
+                    android:elevation="4dp"
+                    android:focusable="true"
+                    android:padding="8dp"
+                    android:src="@drawable/ic_arrow_back"
+                    app:tint="@color/bk_text_primary" />
+            </FrameLayout>
 
             <LinearLayout
                 android:layout_width="match_parent"

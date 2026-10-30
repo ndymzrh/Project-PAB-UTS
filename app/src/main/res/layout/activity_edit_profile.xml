@@ -199,18 +199,20 @@
                         android:background="@drawable/bg_input_field"
                         android:drawableStart="@drawable/ic_ep_mail"
                         android:drawablePadding="12dp"
+                        android:enabled="false"
+                        android:focusable="false"
                         android:hint="nama@email.com"
                         android:importantForAutofill="no"
                         android:inputType="textEmailAddress"
                         android:padding="14dp"
-                        android:textColor="@color/bk_text_primary"
+                        android:textColor="@color/bk_text_secondary"
                         android:textSize="15sp" />
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="4dp"
-                        android:text="Digunakan untuk kirim e-faktur servis &amp; bukti booking"
+                        android:text="Digunakan untuk e-faktur servis &amp; bukti booking. Email tidak dapat diubah."
                         android:textColor="@color/bk_text_secondary"
                         android:textSize="12sp" />
 

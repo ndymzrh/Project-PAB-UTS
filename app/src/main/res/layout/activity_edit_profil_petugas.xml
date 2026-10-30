@@ -1,16 +1,50 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+    Edit Profil Petugas/Pemilik — tampilan disamakan dengan Edit Profil Customer.
+    Struktur: Header (tetap) -> ScrollView (isi form, weight 1) -> Bar tombol bawah (tetap)
+-->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/bk_bg_screen"
-    android:clipChildren="false"
     android:orientation="vertical"
     tools:context=".EditProfilPetugasActivity">
 
-    <!-- Top Bar konsisten dengan halaman lain -->
-    <include layout="@layout/include_top_bar" />
+    <!-- ============ HEADER ============ -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@android:color/white"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingStart="16dp"
+        android:paddingTop="12dp"
+        android:paddingEnd="16dp"
+        android:paddingBottom="12dp">
+
+        <ImageView
+            android:id="@+id/btnBack"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Kembali"
+            android:padding="4dp"
+            android:src="@drawable/ic_arrow_back"
+            app:tint="@color/bk_text_primary" />
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="12dp"
+            android:layout_weight="1"
+            android:text="Edit Profil"
+            android:textColor="@color/bk_text_primary"
+            android:textSize="20sp"
+            android:textStyle="bold" />
+    </LinearLayout>
 
     <ProgressBar
         android:id="@+id/progress"
@@ -24,17 +58,62 @@
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
-        android:clipToPadding="false"
-        android:fillViewport="true"
-        android:paddingBottom="32dp"
         android:scrollbars="none">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical">
+            android:orientation="vertical"
+            android:paddingBottom="16dp">
 
-            <!-- ============ KARTU AVATAR HEADER ============ -->
+            <!-- ============ AVATAR + ID AKUN ============ -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@android:color/white"
+                android:gravity="center_horizontal"
+                android:orientation="vertical"
+                android:paddingTop="20dp"
+                android:paddingBottom="20dp">
+
+                <TextView
+                    android:id="@+id/tvAvatar"
+                    android:layout_width="96dp"
+                    android:layout_height="96dp"
+                    android:background="@drawable/bg_avatar"
+                    android:gravity="center"
+                    android:text="P"
+                    android:textColor="@android:color/white"
+                    android:textSize="32sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/tvHeaderName"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:text="Nama Petugas"
+                    android:textColor="@color/bk_text_primary"
+                    android:textSize="20sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/tvIdAkun"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:background="@drawable/bg_status_chip"
+                    android:paddingStart="10dp"
+                    android:paddingTop="3dp"
+                    android:paddingEnd="10dp"
+                    android:paddingBottom="3dp"
+                    android:text="ID Akun: -"
+                    android:textColor="@color/bk_primary"
+                    android:textSize="12sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+
+            <!-- ============ KARTU 1: INFORMASI PRIBADI ============ -->
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -43,62 +122,162 @@
                 android:layout_marginEnd="16dp"
                 app:cardBackgroundColor="@android:color/white"
                 app:cardCornerRadius="20dp"
-                app:cardElevation="3dp"
+                app:cardElevation="2dp"
                 app:strokeColor="@color/bk_stroke_soft"
                 app:strokeWidth="1dp">
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal"
+                    android:orientation="vertical"
                     android:padding="16dp">
 
-                    <FrameLayout
-                        android:layout_width="64dp"
-                        android:layout_height="64dp"
-                        android:background="@drawable/bg_badge_white"
-                        android:padding="2dp">
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Informasi Pribadi"
+                        android:textColor="@color/bk_text_primary"
+                        android:textSize="17sp"
+                        android:textStyle="bold" />
+
+                    <!-- Nama -->
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="16dp"
+                        android:text="Nama Lengkap"
+                        android:textColor="@color/bk_text_secondary"
+                        android:textSize="13sp" />
+
+                    <EditText
+                        android:id="@+id/etName"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="6dp"
+                        android:background="@drawable/bg_input_field"
+                        android:drawableStart="@drawable/ic_person"
+                        android:drawableTint="@color/bk_text_secondary"
+                        android:drawablePadding="12dp"
+                        android:hint="Nama lengkap"
+                        android:importantForAutofill="no"
+                        android:inputType="textPersonName|textCapWords"
+                        android:padding="14dp"
+                        android:textColor="@color/bk_text_primary"
+                        android:textSize="15sp" />
+
+                    <!-- Email + chip terverifikasi -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="14dp"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
 
                         <TextView
-                            android:id="@+id/tvAvatarEdit"
-                            android:layout_width="match_parent"
-                            android:layout_height="match_parent"
-                            android:background="@drawable/bg_avatar"
-                            android:gravity="center"
-                            android:text="P"
-                            android:textColor="@android:color/white"
-                            android:textSize="22sp"
-                            android:textStyle="bold" />
-                    </FrameLayout>
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="Alamat Email"
+                            android:textColor="@color/bk_text_secondary"
+                            android:textSize="13sp" />
+
+                        <TextView
+                            android:id="@+id/tvEmailVerified"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:background="@drawable/bg_status_chip"
+                            android:paddingStart="8dp"
+                            android:paddingTop="2dp"
+                            android:paddingEnd="8dp"
+                            android:paddingBottom="2dp"
+                            android:text="Terverifikasi"
+                            android:textColor="@color/bk_primary"
+                            android:textSize="11sp"
+                            android:textStyle="bold"
+                            android:visibility="gone" />
+                    </LinearLayout>
+
+                    <EditText
+                        android:id="@+id/etEmail"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="6dp"
+                        android:background="@drawable/bg_input_field"
+                        android:drawableStart="@drawable/ic_ep_mail"
+                        android:drawablePadding="12dp"
+                        android:enabled="false"
+                        android:focusable="false"
+                        android:hint="nama@email.com"
+                        android:importantForAutofill="no"
+                        android:inputType="textEmailAddress"
+                        android:padding="14dp"
+                        android:textColor="@color/bk_text_secondary"
+                        android:textSize="15sp" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:text="Email dipakai untuk masuk dan tidak dapat diubah"
+                        android:textColor="@color/bk_text_secondary"
+                        android:textSize="12sp" />
+
+                    <!-- Nomor HP -->
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="14dp"
+                        android:text="Nomor HP / WhatsApp"
+                        android:textColor="@color/bk_text_secondary"
+                        android:textSize="13sp" />
 
                     <LinearLayout
-                        android:layout_width="0dp"
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginStart="16dp"
-                        android:layout_weight="1"
-                        android:orientation="vertical">
+                        android:layout_marginTop="6dp"
+                        android:background="@drawable/bg_input_field"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal"
+                        android:paddingStart="14dp"
+                        android:paddingEnd="14dp">
+
+                        <ImageView
+                            android:layout_width="24dp"
+                            android:layout_height="24dp"
+                            android:importantForAccessibility="no"
+                            android:src="@drawable/ic_wa"
+                            app:tint="@color/bk_text_secondary" />
 
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Foto / Inisial Profil"
+                            android:layout_marginStart="12dp"
+                            android:text="+62"
                             android:textColor="@color/bk_text_primary"
                             android:textSize="15sp"
                             android:textStyle="bold" />
 
-                        <TextView
-                            android:layout_width="wrap_content"
+                        <EditText
+                            android:id="@+id/etPhone"
+                            android:layout_width="0dp"
                             android:layout_height="wrap_content"
-                            android:layout_marginTop="3dp"
-                            android:text="Inisial dibuat otomatis dari nama lengkap"
-                            android:textColor="@color/bk_text_secondary"
-                            android:textSize="12sp" />
+                            android:layout_weight="1"
+                            android:background="@null"
+                            android:hint="812-3456-7890"
+                            android:importantForAutofill="no"
+                            android:inputType="phone"
+                            android:maxLength="14"
+                            android:paddingStart="10dp"
+                            android:paddingTop="14dp"
+                            android:paddingEnd="0dp"
+                            android:paddingBottom="14dp"
+                            android:textColor="@color/bk_text_primary"
+                            android:textSize="15sp" />
                     </LinearLayout>
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- ============ DATA AKUN (TERKUNCI) ============ -->
+            <!-- ============ KARTU 2: DATA KEPEGAWAIAN ============ -->
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -107,7 +286,7 @@
                 android:layout_marginEnd="16dp"
                 app:cardBackgroundColor="@android:color/white"
                 app:cardCornerRadius="20dp"
-                app:cardElevation="3dp"
+                app:cardElevation="2dp"
                 app:strokeColor="@color/bk_stroke_soft"
                 app:strokeWidth="1dp">
 
@@ -120,66 +299,61 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:letterSpacing="0.08"
-                        android:text="DATA AKUN"
-                        android:textColor="@color/bk_text_secondary"
-                        android:textSize="12sp"
+                        android:text="Data Kepegawaian"
+                        android:textColor="@color/bk_text_primary"
+                        android:textSize="17sp"
                         android:textStyle="bold" />
 
-                    <com.google.android.material.textfield.TextInputLayout
-                        style="@style/Widget.MaterialComponents.TextInputLayout.FilledBox"
+                    <!-- NIP -->
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="16dp"
+                        android:text="NIP"
+                        android:textColor="@color/bk_text_secondary"
+                        android:textSize="13sp" />
+
+                    <EditText
+                        android:id="@+id/etNip"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="12dp"
-                        android:enabled="false"
-                        android:hint="Email"
-                        app:boxBackgroundColor="@color/bk_bg_screen"
-                        app:boxCornerRadiusBottomEnd="14dp"
-                        app:boxCornerRadiusBottomStart="14dp"
-                        app:boxCornerRadiusTopEnd="14dp"
-                        app:boxCornerRadiusTopStart="14dp"
-                        app:boxStrokeWidth="0dp">
+                        android:layout_marginTop="6dp"
+                        android:background="@drawable/bg_input_field"
+                        android:hint="Nomor induk pegawai"
+                        android:importantForAutofill="no"
+                        android:inputType="text"
+                        android:padding="14dp"
+                        android:textColor="@color/bk_text_primary"
+                        android:textSize="15sp" />
 
-                        <com.google.android.material.textfield.TextInputEditText
-                            android:id="@+id/etEmail"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:enabled="false"
-                            android:focusable="false"
-                            android:inputType="textEmailAddress"
-                            android:maxLines="1"
-                            android:textColor="@color/bk_text_secondary"
-                            android:textSize="14sp" />
-                    </com.google.android.material.textfield.TextInputLayout>
+                    <!-- Cabang: dipilih dari daftar bengkel di Firestore (klik -> dialog pilihan) -->
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="14dp"
+                        android:text="Cabang"
+                        android:textColor="@color/bk_text_secondary"
+                        android:textSize="13sp" />
 
-                    <com.google.android.material.textfield.TextInputLayout
-                        style="@style/Widget.MaterialComponents.TextInputLayout.FilledBox"
+                    <TextView
+                        android:id="@+id/tvCabang"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="10dp"
-                        android:enabled="false"
-                        android:hint="ID Akun"
-                        app:boxBackgroundColor="@color/bk_bg_screen"
-                        app:boxCornerRadiusBottomEnd="14dp"
-                        app:boxCornerRadiusBottomStart="14dp"
-                        app:boxCornerRadiusTopEnd="14dp"
-                        app:boxCornerRadiusTopStart="14dp"
-                        app:boxStrokeWidth="0dp">
-
-                        <com.google.android.material.textfield.TextInputEditText
-                            android:id="@+id/etIdAkun"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:enabled="false"
-                            android:focusable="false"
-                            android:maxLines="1"
-                            android:textColor="@color/bk_text_secondary"
-                            android:textSize="14sp" />
-                    </com.google.android.material.textfield.TextInputLayout>
+                        android:layout_marginTop="6dp"
+                        android:background="@drawable/bg_input_field"
+                        android:clickable="true"
+                        android:drawableStart="@drawable/ic_ep_city"
+                        android:drawableEnd="@drawable/ic_chevron_right"
+                        android:drawablePadding="12dp"
+                        android:focusable="true"
+                        android:hint="Pilih cabang"
+                        android:padding="14dp"
+                        android:textColor="@color/bk_text_primary"
+                        android:textSize="15sp" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- ============ DATA PROFIL (BISA DIUBAH) ============ -->
+            <!-- ============ KARTU 3: KEAMANAN AKUN ============ -->
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -188,7 +362,7 @@
                 android:layout_marginEnd="16dp"
                 app:cardBackgroundColor="@android:color/white"
                 app:cardCornerRadius="20dp"
-                app:cardElevation="3dp"
+                app:cardElevation="2dp"
                 app:strokeColor="@color/bk_stroke_soft"
                 app:strokeWidth="1dp">
 
@@ -201,152 +375,102 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:letterSpacing="0.08"
-                        android:text="DATA PROFIL"
-                        android:textColor="@color/bk_text_secondary"
-                        android:textSize="12sp"
+                        android:text="Keamanan Akun"
+                        android:textColor="@color/bk_text_primary"
+                        android:textSize="17sp"
                         android:textStyle="bold" />
 
-                    <!-- Nama -->
-                    <com.google.android.material.textfield.TextInputLayout
-                        android:id="@+id/tilNama"
-                        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                    <LinearLayout
+                        android:id="@+id/btnChangePassword"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="12dp"
-                        android:hint="Nama Lengkap"
-                        app:boxCornerRadiusBottomEnd="14dp"
-                        app:boxCornerRadiusBottomStart="14dp"
-                        app:boxCornerRadiusTopEnd="14dp"
-                        app:boxCornerRadiusTopStart="14dp"
-                        app:boxStrokeColor="@color/bk_primary"
-                        app:hintTextColor="@color/bk_primary">
+                        android:background="@drawable/bg_input_field"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal"
+                        android:padding="12dp">
 
-                        <com.google.android.material.textfield.TextInputEditText
-                            android:id="@+id/etNama"
-                            android:layout_width="match_parent"
+                        <ImageView
+                            android:layout_width="40dp"
+                            android:layout_height="40dp"
+                            android:background="@drawable/bg_icon_circle"
+                            android:importantForAccessibility="no"
+                            android:padding="9dp"
+                            android:src="@drawable/ic_ep_lock"
+                            app:tint="@color/bk_primary" />
+
+                        <LinearLayout
+                            android:layout_width="0dp"
                             android:layout_height="wrap_content"
-                            android:inputType="textPersonName|textCapWords"
-                            android:maxLines="1"
-                            android:textSize="14sp" />
-                    </com.google.android.material.textfield.TextInputLayout>
+                            android:layout_marginStart="12dp"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
 
-                    <!-- NIP -->
-                    <com.google.android.material.textfield.TextInputLayout
-                        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="10dp"
-                        android:hint="NIP"
-                        app:boxCornerRadiusBottomEnd="14dp"
-                        app:boxCornerRadiusBottomStart="14dp"
-                        app:boxCornerRadiusTopEnd="14dp"
-                        app:boxCornerRadiusTopStart="14dp"
-                        app:boxStrokeColor="@color/bk_primary"
-                        app:hintTextColor="@color/bk_primary">
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Ubah Kata Sandi"
+                                android:textColor="@color/bk_text_primary"
+                                android:textSize="15sp"
+                                android:textStyle="bold" />
 
-                        <com.google.android.material.textfield.TextInputEditText
-                            android:id="@+id/etNip"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:inputType="text"
-                            android:maxLines="1"
-                            android:textSize="14sp" />
-                    </com.google.android.material.textfield.TextInputLayout>
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Ganti dengan kata sandi baru"
+                                android:textColor="@color/bk_text_secondary"
+                                android:textSize="12sp" />
+                        </LinearLayout>
 
-                    <!-- No. HP -->
-                    <com.google.android.material.textfield.TextInputLayout
-                        android:id="@+id/tilTelepon"
-                        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="10dp"
-                        android:hint="No. HP"
-                        app:boxCornerRadiusBottomEnd="14dp"
-                        app:boxCornerRadiusBottomStart="14dp"
-                        app:boxCornerRadiusTopEnd="14dp"
-                        app:boxCornerRadiusTopStart="14dp"
-                        app:boxStrokeColor="@color/bk_primary"
-                        app:helperText="Contoh: 08123456789"
-                        app:helperTextEnabled="true"
-                        app:hintTextColor="@color/bk_primary">
-
-                        <com.google.android.material.textfield.TextInputEditText
-                            android:id="@+id/etTelepon"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:inputType="phone"
-                            android:maxLines="1"
-                            android:textSize="14sp" />
-                    </com.google.android.material.textfield.TextInputLayout>
-
-                    <!-- Cabang -->
-                    <com.google.android.material.textfield.TextInputLayout
-                        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="10dp"
-                        android:hint="Cabang"
-                        app:boxCornerRadiusBottomEnd="14dp"
-                        app:boxCornerRadiusBottomStart="14dp"
-                        app:boxCornerRadiusTopEnd="14dp"
-                        app:boxCornerRadiusTopStart="14dp"
-                        app:boxStrokeColor="@color/bk_primary"
-                        app:hintTextColor="@color/bk_primary">
-
-                        <com.google.android.material.textfield.TextInputEditText
-                            android:id="@+id/etCabang"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:inputType="textCapWords"
-                            android:maxLines="1"
-                            android:textSize="14sp" />
-                    </com.google.android.material.textfield.TextInputLayout>
-
-                    <!-- Shift -->
-                    <com.google.android.material.textfield.TextInputLayout
-                        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="10dp"
-                        android:hint="Shift"
-                        app:boxCornerRadiusBottomEnd="14dp"
-                        app:boxCornerRadiusBottomStart="14dp"
-                        app:boxCornerRadiusTopEnd="14dp"
-                        app:boxCornerRadiusTopStart="14dp"
-                        app:boxStrokeColor="@color/bk_primary"
-                        app:hintTextColor="@color/bk_primary">
-
-                        <AutoCompleteTextView
-                            android:id="@+id/actShift"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:inputType="none"
-                            android:textSize="14sp" />
-                    </com.google.android.material.textfield.TextInputLayout>
+                        <ImageView
+                            android:layout_width="24dp"
+                            android:layout_height="24dp"
+                            android:importantForAccessibility="no"
+                            android:src="@drawable/ic_chevron_right"
+                            app:tint="@color/bk_text_secondary" />
+                    </LinearLayout>
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
         </LinearLayout>
     </ScrollView>
 
-    <!-- ============ TOMBOL SIMPAN ============ -->
+    <!-- ============ BAR TOMBOL BAWAH (tetap, tidak ikut scroll) ============ -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:background="@android:color/white"
-        android:elevation="8dp"
         android:orientation="vertical"
         android:padding="16dp">
 
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnSimpan"
+        <TextView
+            android:id="@+id/btnSave"
             android:layout_width="match_parent"
-            android:layout_height="52dp"
-            android:backgroundTint="@color/bk_primary"
+            android:layout_height="wrap_content"
+            android:background="@drawable/bg_button_primary"
+            android:clickable="true"
+            android:focusable="true"
+            android:gravity="center"
+            android:padding="15dp"
             android:text="Simpan Perubahan"
             android:textColor="@android:color/white"
+            android:textSize="15sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/btnCancel"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:background="@drawable/bg_button_light"
+            android:clickable="true"
+            android:focusable="true"
+            android:gravity="center"
+            android:padding="13dp"
+            android:text="Batal"
+            android:textColor="@color/bk_text_primary"
             android:textSize="14sp"
-            android:textStyle="bold"
-            app:cornerRadius="16dp" />
+            android:textStyle="bold" />
     </LinearLayout>
 </LinearLayout>

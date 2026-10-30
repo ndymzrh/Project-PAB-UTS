@@ -125,7 +125,7 @@ class HomeActivityPetugas : AppCompatActivity() {
         db.collection("users").document(uid).get().addOnSuccessListener { doc ->
             val isPemilik = doc.getString("role") == "pemilik"
             binding.tvStaffName.text = doc.getString("nama") ?: "Petugas"
-            binding.tvStaffRole.text = if (isPemilik) "Pemilik" else "Admin"
+            binding.tvStaffRole.text = if (isPemilik) "Pemilik" else "Petugas"
             binding.cardLaporan.visibility = if (isPemilik) View.VISIBLE else View.GONE
         }
     }
