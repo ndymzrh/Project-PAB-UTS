@@ -15,6 +15,7 @@
         layout="@layout/include_top_bar" />
 
     <androidx.core.widget.NestedScrollView
+        android:id="@+id/nestedScrollView"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:clipToPadding="false"
@@ -293,7 +294,6 @@
                     android:orientation="horizontal"
                     android:paddingTop="16dp"
                     android:paddingBottom="14dp">
-
 
 
                     <!-- Booking -->
@@ -585,13 +585,13 @@
         android:id="@+id/bottomNav"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_gravity="bottom"
         android:background="@android:color/white"
         app:elevation="12dp"
-        app:itemActiveIndicatorStyle="@null"
         app:itemIconTint="@color/bk_nav_item_color"
         app:itemTextColor="@color/bk_nav_item_color"
         app:labelVisibilityMode="labeled"
+        app:layout_anchor="@+id/nestedScrollView"
+        app:layout_anchorGravity="bottom|center"
         app:menu="@menu/menu_bottom_nav_petugas" />
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

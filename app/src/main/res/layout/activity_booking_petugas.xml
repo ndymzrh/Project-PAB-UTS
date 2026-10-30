@@ -185,4 +185,18 @@
             android:layout_gravity="center"
             android:visibility="gone" />
     </FrameLayout>
+
+    <!-- ============ BOTTOM NAVIGATION ============ -->
+    <com.google.android.material.bottomnavigation.BottomNavigationView
+        android:id="@+id/bottomNav"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@android:color/white"
+        app:elevation="12dp"
+        app:itemIconTint="@color/bk_nav_item_color"
+        app:itemTextColor="@color/bk_nav_item_color"
+        app:labelVisibilityMode="labeled"
+        app:layout_anchor="@+id/nestedScrollView"
+        app:layout_anchorGravity="bottom|center"
+        app:menu="@menu/menu_bottom_nav_petugas" />
 </LinearLayout>

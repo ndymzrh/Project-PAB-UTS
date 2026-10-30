@@ -35,7 +35,7 @@
                     android:layout_height="40dp"
                     android:layout_gravity="center"
                     android:importantForAccessibility="no"
-                    android:src="@drawable/ic_map_pin" />
+                    android:src="@drawable/ic_pin_custom" />
             </com.google.android.material.card.MaterialCardView>
 
             <LinearLayout

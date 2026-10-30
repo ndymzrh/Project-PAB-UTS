@@ -16,8 +16,10 @@ import androidx.core.view.updatePadding
 import androidx.core.widget.doAfterTextChanged
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
 import id.ac.stmi.mobileproject.databinding.ActivityBookingPetugasBinding
+import kotlin.jvm.java
 
 /**
  * Kelola booking (petugas): daftar realtime semua booking, pencarian, dan perubahan status.
@@ -84,6 +86,15 @@ class BookingPetugasActivity : AppCompatActivity() {
             finish()
             return
         }
+
+        // cek user, hanya petugas yg bisa update
+        FirebaseFirestore.getInstance().collection("users").document(uid).get()
+            .addOnSuccessListener { doc ->
+                val role = doc.getString("role")
+                // Hanya petugas yang diizinkan melihat tombol update
+                adapter.allowStatusUpdate = (role == "petugas")
+                adapter.notifyDataSetChanged() // Muat ulang tampilan
+            }
         listenBookings()
     }
 
@@ -121,6 +132,43 @@ class BookingPetugasActivity : AppCompatActivity() {
         aturChip(binding.chipAktif, filter == Filter.AKTIF)
         aturChip(binding.chipRiwayat, filter == Filter.RIWAYAT)
         aturChip(binding.chipSemua, filter == Filter.SEMUA)
+
+        binding.bottomNav.selectedItemId = R.id.nav_booking
+
+        // 2. Atur navigasi
+        binding.bottomNav.setOnItemSelectedListener { item ->
+            if (item.itemId == binding.bottomNav.selectedItemId) {
+                return@setOnItemSelectedListener true
+            }
+
+            when (item.itemId) {
+                R.id.nav_home -> {
+                    val intent = Intent(this, HomeActivityPetugas::class.java).apply {
+                        addFlags(Intent.FLAG_ACTIVITY_NO_ANIMATION)
+                    }
+                    startActivity(intent)
+                    overridePendingTransition(0, 0)
+                    finish()
+                    true
+                }
+                R.id.nav_booking -> true
+                R.id.nav_servis -> {
+                    toast("Kelola servis")
+                    binding.bottomNav.post { binding.bottomNav.selectedItemId = R.id.nav_booking }
+                    false
+                }
+                R.id.nav_account -> {
+                    val intent = Intent(this, AccountPetugasActivity::class.java).apply {
+                        addFlags(Intent.FLAG_ACTIVITY_NO_ANIMATION)
+                    }
+                    startActivity(intent)
+                    overridePendingTransition(0, 0)
+                    finish()
+                    true
+                }
+                else -> false
+            }
+        }
 
         val kata = binding.etCari.text?.toString()?.trim()?.lowercase().orEmpty()
         val sesuaiFilter = when (filter) {
@@ -212,6 +260,8 @@ class BookingPetugasActivity : AppCompatActivity() {
             }
         )
     }
+
+
 
     private fun toast(message: String, panjang: Boolean = false) =
         Toast.makeText(this, message, if (panjang) Toast.LENGTH_LONG else Toast.LENGTH_SHORT).show()

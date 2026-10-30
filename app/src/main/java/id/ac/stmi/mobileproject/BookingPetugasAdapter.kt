@@ -11,7 +11,7 @@ import androidx.recyclerview.widget.RecyclerView
 import id.ac.stmi.mobileproject.databinding.ItemBookingPetugasBinding
 
 class BookingPetugasAdapter(
-    private val allowStatusUpdate: Boolean,
+    var allowStatusUpdate: Boolean,
     private val onUpdateStatus: (BookingRecord, BookingStatus) -> Unit
 ) : ListAdapter<BookingRecord, BookingPetugasAdapter.ViewHolder>(Diff) {
 
