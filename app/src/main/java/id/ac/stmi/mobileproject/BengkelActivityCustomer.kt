@@ -10,6 +10,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import androidx.core.view.updateLayoutParams
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
@@ -18,6 +19,7 @@ import androidx.core.widget.doAfterTextChanged
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.PagerSnapHelper
 import androidx.recyclerview.widget.RecyclerView
+import com.google.android.play.integrity.internal.t
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
 import id.ac.stmi.mobileproject.databinding.ActivityBengkelCustomerBinding
@@ -32,6 +34,7 @@ import kotlin.collections.isNotEmpty
 import kotlin.collections.map
 import kotlin.collections.sortedBy
 import org.osmdroid.util.GeoPoint as OsmPoint
+import kotlin.math.cos
 
 /**
  * Peta bengkel untuk pelanggan.
@@ -48,6 +51,13 @@ class BengkelActivityCustomer : AppCompatActivity() {
         const val RESULT_ID = "bengkel_id"
         const val RESULT_NAMA = "bengkel_nama"
         const val KOLEKSI_BENGKEL = "bengkel"
+
+        /** Zoom awal: bengkel dalam radius ini dari pengguna ikut masuk ke tampilan peta. */
+        private const val RADIUS_M = 5_000.0
+        /** Tampilan peta minimal selebar radius ini (supaya tidak terlalu dekat). */
+        private const val RADIUS_MIN_M = 1_500.0
+        /** Bila bengkel terdekat lebih jauh dari ini, peta cukup memusatkan ke pengguna. */
+        private const val RADIUS_MAKS_M = 20_000.0
     }
 
     private lateinit var binding: ActivityBengkelCustomerBinding
@@ -60,6 +70,7 @@ class BengkelActivityCustomer : AppCompatActivity() {
     private var tampil: List<Bengkel> = emptyList()
     private var lokasiSaya: Location? = null
     private var sudahFitAwal = false
+    private var sudahZoomRadius = false
     private var locationListener: LocationListener? = null
 
     private val izinLokasi = registerForActivityResult(
@@ -85,16 +96,27 @@ class BengkelActivityCustomer : AppCompatActivity() {
             .isAppearanceLightStatusBars = true
 
         val atasAwal = binding.barAtas.paddingTop
-        val bawahAwal = binding.panelBawah.paddingBottom
         ViewCompat.setOnApplyWindowInsetsListener(binding.main) { _, insets ->
             val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
             binding.barAtas.updatePadding(top = atasAwal + bars.top)
-            binding.panelBawah.updatePadding(bottom = bawahAwal + bars.bottom)
+            // Inset bawah ditangani BottomNavigationView sendiri, bukan panel kartu
             insets
+        }
+
+        // Panel kartu selalu berada DI ATAS bottom nav (tinggi nav sudah termasuk inset & tombol Booking)
+        binding.navContainer.addOnLayoutChangeListener { _, _, top, _, bottom, _, _, _, _ ->
+            val tinggiNav = bottom - top
+            val lp = binding.panelBawah.layoutParams as android.view.ViewGroup.MarginLayoutParams
+            if (lp.bottomMargin != tinggiNav) {
+                binding.panelBawah.updateLayoutParams<android.view.ViewGroup.MarginLayoutParams> {
+                    bottomMargin = tinggiNav
+                }
+            }
         }
 
         siapkanPeta()
         siapkanKartu()
+        setupBottomNav()
 
         binding.btnBack.setOnClickListener { finish() }
         binding.etCari.doAfterTextChanged { terapkanFilter(fit = true) }
@@ -183,10 +205,63 @@ class BengkelActivityCustomer : AppCompatActivity() {
         binding.rvBengkel.visibility = if (hasil.isEmpty()) View.GONE else View.VISIBLE
         gambarMarker()
 
-        if (fit && hasil.isNotEmpty()) {
+        if (hasil.isNotEmpty() && lokasiSaya != null && !sudahZoomRadius) {
+            // Pertama kali lokasi pengguna dan data bengkel sama-sama tersedia:
+            // zoom ke sekitar pengguna, bukan seluruh bengkel yang bisa sangat jauh
+            sudahZoomRadius = true
+            sudahFitAwal = true
+            zoomKeSekitarSaya()
+        } else if (fit && hasil.isNotEmpty()) {
             fitPeta(hasil)
             sudahFitAwal = true
         }
+    }
+
+    /**
+     * Zoom ke area sekitar pengguna:
+     * - selalu mencakup radius minimal [RADIUS_MIN_M] di sekitar pengguna,
+     * - ditambah semua bengkel dalam radius [RADIUS_M],
+     * - jika tidak ada yang dekat: bengkel terdekat (selama < [RADIUS_MAKS_M]),
+     * - jika terlalu jauh: cukup memusatkan ke pengguna.
+     * Bagian bawah peta ditutup kartu, jadi area diperluas ke bawah agar penanda tidak tertutup.
+     */
+    private fun zoomKeSekitarSaya() {
+        val l = lokasiSaya ?: return
+        val saya = OsmPoint(l.latitude, l.longitude)
+
+        val dLat = RADIUS_MIN_M / 111_320.0
+        val dLng = RADIUS_MIN_M / (111_320.0 * cos(Math.toRadians(l.latitude)))
+        val titik = mutableListOf(
+            saya,
+            OsmPoint(l.latitude + dLat, l.longitude + dLng),
+            OsmPoint(l.latitude - dLat, l.longitude - dLng)
+        )
+
+        val berjarak = tampil.map { it to Jarak.meter(l.latitude, l.longitude, it.lat, it.lng).toDouble() }
+        val dekat = berjarak.filter { it.second <= RADIUS_M }
+        val terdekat = berjarak.minByOrNull { it.second }
+        val dipakai = when {
+            dekat.isNotEmpty() -> dekat
+            terdekat != null && terdekat.second <= RADIUS_MAKS_M -> listOf(terdekat)
+            else -> emptyList()
+        }
+        dipakai.forEach { titik += OsmPoint(it.first.lat, it.first.lng) }
+
+        if (dipakai.isEmpty()) {
+            binding.map.controller.setZoom(14.0)
+            binding.map.controller.animateTo(saya)
+            return
+        }
+
+        val kotak = BoundingBox.fromGeoPoints(titik)
+        val tinggi = kotak.latNorth - kotak.latSouth
+        val diperluas = BoundingBox(
+            (kotak.latNorth + tinggi * 0.10).coerceAtMost(85.0),
+            kotak.lonEast,
+            (kotak.latSouth - tinggi * 0.55).coerceAtLeast(-85.0),
+            kotak.lonWest
+        )
+        binding.map.post { binding.map.zoomToBoundingBox(diperluas, true, 80) }
     }
 
     private fun gambarMarker() {
@@ -242,10 +317,7 @@ class BengkelActivityCustomer : AppCompatActivity() {
             onHasil = { loc ->
                 lokasiSaya = loc
                 terapkanFilter(fit = false)
-                if (pusatkan) {
-                    binding.map.controller.setZoom(15.0)
-                    binding.map.controller.animateTo(OsmPoint(loc.latitude, loc.longitude))
-                }
+                if (pusatkan) zoomKeSekitarSaya()
             },
             onGagal = {
                 if (pusatkan) toast("Lokasi belum tersedia. Pastikan GPS aktif lalu coba lagi.")
@@ -285,6 +357,44 @@ class BengkelActivityCustomer : AppCompatActivity() {
         listener?.remove()
         binding.map.onDetach()
         super.onDestroy()
+    }
+
+    private fun setupBottomNav() {
+        binding.bottomNav.selectedItemId = R.id.nav_bengkel
+
+        binding.bottomNav.setOnItemSelectedListener { item ->
+            when (item.itemId) {
+                R.id.nav_account -> {
+                    openTab(AccountActivity::class.java)
+                    false
+                }
+                R.id.nav_home -> {
+                    openTab(HomeActivityCustomer::class.java)
+                    false
+                }
+                R.id.nav_promo -> {
+                    openTab(PromoActivityCustomer::class.java)
+                    false
+                }
+                R.id.nav_bengkel -> {
+                    true
+                }
+                else -> false
+            }
+        }
+        // Mencegah reload ketika tab yang sedang aktif ditekan kembali
+        binding.bottomNav.setOnItemReselectedListener { }
+    }
+
+    private fun openTab(target: Class<*>) {
+        startActivity(
+            Intent(this, target).addFlags(
+                Intent.FLAG_ACTIVITY_CLEAR_TOP or
+                        Intent.FLAG_ACTIVITY_SINGLE_TOP or
+                        Intent.FLAG_ACTIVITY_NO_ANIMATION
+            )
+        )
+        finish()
     }
 
     private fun toast(msg: String, panjang: Boolean = false) =
