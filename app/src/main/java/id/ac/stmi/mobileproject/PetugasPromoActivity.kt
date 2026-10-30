@@ -7,15 +7,21 @@ import android.os.Bundle
 import android.view.View
 import android.widget.TextView
 import android.widget.Toast
+import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.updatePadding
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.chip.Chip
 import com.google.android.material.chip.ChipGroup
+import id.ac.stmi.mobileproject.databinding.ActivityPromoPetugasBinding
 
 class PetugasPromoActivity : AppCompatActivity() {
 
+    private lateinit var binding: ActivityPromoPetugasBinding
     private lateinit var adapter: PetugasPromoAdapter
     private lateinit var rvPromo: RecyclerView
     private lateinit var tvKosong: TextView
@@ -26,7 +32,19 @@ class PetugasPromoActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_promo_petugas)
+        enableEdgeToEdge()
+        binding = ActivityPromoPetugasBinding.inflate(layoutInflater)
+        setContentView(binding.root)
+        binding.btnBack.setOnClickListener { finish() }
+
+        val atasAwal = binding.header.paddingTop
+        val bawahAwal = binding.main.paddingBottom
+        ViewCompat.setOnApplyWindowInsetsListener(binding.main) { _, insets ->
+            val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+            binding.header.updatePadding(top = atasAwal + bars.top)
+            binding.main.updatePadding(bottom = bawahAwal + bars.bottom)
+            insets
+        }
 
         setupDaftar()
         setupFilter()
@@ -35,11 +53,9 @@ class PetugasPromoActivity : AppCompatActivity() {
             startActivity(Intent(this, PetugasPromoTambahActivity::class.java))
         }
 
-        // Isi promo contoh bila koleksi masih kosong
         PromoStore.seedSekali(this)
     }
 
-    // Ikut berubah otomatis saat promo ditambah / dihapus
     override fun onStart() {
         super.onStart()
         promoListener = PromoStore.listen(
@@ -70,7 +86,6 @@ class PetugasPromoActivity : AppCompatActivity() {
     private fun setupFilter() {
         val chipGroup = findViewById<ChipGroup>(R.id.chipGroupKategori)
 
-        // Matikan ikon centang agar teks chip tidak bergeser saat dipilih
         for (i in 0 until chipGroup.childCount) {
             (chipGroup.getChildAt(i) as Chip).isCheckedIconVisible = false
         }
@@ -103,6 +118,9 @@ class PetugasPromoActivity : AppCompatActivity() {
         val now = System.currentTimeMillis()
         val aktif = semuaPromo.filter { it.berakhir >= now }
         val list = filter?.let { f -> aktif.filter { it.kategori == f } } ?: aktif
+
+        // Total di header mengikuti kategori yang dipilih (Semua = seluruh promo aktif)
+        binding.tvTotal.text = "${list.size} promo aktif"
         adapter.submitList(list)
         tvKosong.visibility = if (list.isEmpty()) View.VISIBLE else View.GONE
     }

@@ -4,16 +4,21 @@ import android.os.Bundle
 import android.widget.ArrayAdapter
 import android.widget.AutoCompleteTextView
 import android.widget.Toast
+import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.isVisible
-import com.google.android.material.appbar.MaterialToolbar
+import androidx.core.view.updatePadding
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.datepicker.MaterialDatePicker
 import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.textfield.TextInputLayout
+import id.ac.stmi.mobileproject.databinding.ActivityAddPromoBinding
 
 class PetugasPromoTambahActivity : AppCompatActivity() {
 
+    private lateinit var binding: ActivityAddPromoBinding
     private lateinit var btnSimpan: MaterialButton
 
     private var mulai: Long? = null
@@ -25,11 +30,22 @@ class PetugasPromoTambahActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_add_promo)
-        findViewById<MaterialToolbar>(R.id.toolbar).setNavigationOnClickListener { finish() }
+        enableEdgeToEdge()
+        binding = ActivityAddPromoBinding.inflate(layoutInflater)
+        setContentView(binding.root)
 
         btnSimpan = findViewById(R.id.btnSimpan)
         btnSimpan.setOnClickListener { simpan() }
+        binding.btnBack.setOnClickListener { finish() }
+
+        val atasAwal = binding.header.paddingTop
+        val bawahAwal = binding.main.paddingBottom
+        ViewCompat.setOnApplyWindowInsetsListener(binding.main) { _, insets ->
+            val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+            binding.header.updatePadding(top = atasAwal + bars.top)
+            binding.main.updatePadding(bottom = bawahAwal + bars.bottom)
+            insets
+        }
 
         til(R.id.tilJudul).helperText =
             "Samakan/mirip dengan nama layanan, mis. Servis Berkala"
