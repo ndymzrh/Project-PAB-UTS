@@ -13,6 +13,7 @@ import androidx.core.view.WindowInsetsCompat
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.ListenerRegistration
 import id.ac.stmi.mobileproject.databinding.ActivityAccountBinding
 import id.ac.stmi.mobileproject.databinding.ItemMenuRowBinding
 import java.text.NumberFormat
@@ -34,6 +35,7 @@ class AccountActivity : AppCompatActivity() {
     private val idFormat = NumberFormat.getIntegerInstance(Locale("id", "ID"))
 
     private var currentVehicle: Vehicle? = null
+    private var bookingListener: ListenerRegistration? = null
 
     companion object {
         // Nomor WhatsApp customer care. Format internasional, TANPA "+" dan TANPA 0 di depan.
@@ -62,7 +64,18 @@ class AccountActivity : AppCompatActivity() {
 
         listenUser(uid)
         listenVehicles(uid)
-        showActiveService(null)
+        showActiveService(emptyList())
+    }
+
+    override fun onStart() {
+        super.onStart()
+        auth.currentUser?.uid?.let { listenActiveBookings(it) }
+    }
+
+    override fun onStop() {
+        bookingListener?.remove()
+        bookingListener = null
+        super.onStop()
     }
 
     override fun onResume() {
@@ -146,13 +159,29 @@ class AccountActivity : AppCompatActivity() {
     }
 
     // ------------------------------------------------------------------
-    // 3. SERVIS SEDANG BERJALAN
+    // 3. SERVIS SEDANG BERJALAN (realtime dari koleksi "bookings")
     // ------------------------------------------------------------------
-    private fun showActiveService(detail: String?) {
-        val ada = detail != null
+    /** Booking aktif = belum berstatus akhir (menunggu konfirmasi, dikonfirmasi, sedang diservis). */
+    private fun listenActiveBookings(uid: String) {
+        bookingListener?.remove()
+        bookingListener = BookingRepository.listenCustomerBookings(
+            uid = uid,
+            onResult = { bookings -> showActiveService(bookings.filter { !it.status.isFinal }) },
+            onError = { showActiveService(emptyList()) }
+        )
+    }
+
+    private fun showActiveService(aktif: List<BookingRecord>) {
+        val ada = aktif.isNotEmpty()
         binding.cardActiveService.visibility = if (ada) View.VISIBLE else View.GONE
-        binding.tvStatActive.text = if (ada) "1" else "0"
-        if (ada) binding.tvActiveServiceDetail.text = detail
+        binding.tvStatActive.text = aktif.size.toString()
+        if (!ada) return
+
+        // aktif sudah terurut: yang terbaru di atas
+        val terbaru = aktif.first()
+        val ringkas = "${terbaru.serviceNames.ifBlank { "Booking servis" }} • ${terbaru.status.label}"
+        binding.tvActiveServiceDetail.text =
+            if (aktif.size == 1) ringkas else "${aktif.size} booking aktif • $ringkas"
     }
 
     // ------------------------------------------------------------------
@@ -219,7 +248,9 @@ class AccountActivity : AppCompatActivity() {
         binding.btnEditProfile.setOnClickListener {
             startActivity(Intent(this, EditProfileActivity::class.java))
         }
-        binding.btnTrackService.setOnClickListener { toast("Pantau servis") }
+        binding.btnTrackService.setOnClickListener {
+            startActivity(Intent(this, BookingListActivityCustomer::class.java))
+        }
         binding.btnAddCar.setOnClickListener {
             startActivity(Intent(this, AddVehicleActivityCustomer::class.java))
         }

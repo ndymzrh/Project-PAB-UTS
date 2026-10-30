@@ -69,10 +69,11 @@ class RiwayatBookingActivityCustomer : AppCompatActivity() {
         listener = BookingRepository.listenCustomerBookings(
             uid = uid,
             onResult = { bookings ->
-                val completedBookings = bookings.filter { it.status == BookingStatus.SELESAI }
-                adapter.submitList(completedBookings)
+                // Riwayat memuat SEMUA booking (aktif, selesai, ditolak, dibatalkan).
+                // Urutan dari repository: yang aktif di atas, lalu yang terbaru.
+                adapter.submitList(bookings)
                 binding.progress.isVisible = false
-                binding.tvEmpty.isVisible = completedBookings.isEmpty()
+                binding.tvEmpty.isVisible = bookings.isEmpty()
             },
             onError = {
                 binding.progress.isVisible = false

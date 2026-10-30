@@ -39,6 +39,7 @@ class BookingListAdapter(
                     PointsStatus.REVERSED -> "Points dikoreksi"
                     PointsStatus.PENDING -> "Menunggu pencatatan points"
                 }
+                BookingStatus.DITOLAK, BookingStatus.DIBATALKAN -> "Tidak ada points"
                 else -> "Estimasi ${booking.estimatedPoints} points"
             }
             tvStatus.text = booking.status.label
@@ -47,6 +48,7 @@ class BookingListAdapter(
                     root.context,
                     when (booking.status) {
                         BookingStatus.SEDANG_DISERVIS -> R.color.bk_accent
+                        BookingStatus.DITOLAK, BookingStatus.DIBATALKAN -> R.color.bk_red_dot
                         else -> R.color.bk_primary
                     }
                 )
@@ -55,9 +57,16 @@ class BookingListAdapter(
                 BookingStatus.MENUNGGU_KONFIRMASI -> 25
                 BookingStatus.DIKONFIRMASI -> 50
                 BookingStatus.SEDANG_DISERVIS -> 75
-                BookingStatus.SELESAI -> 100
-                else -> 0
+                BookingStatus.SELESAI, BookingStatus.DITOLAK, BookingStatus.DIBATALKAN -> 100
             }
+            // Ditolak/dibatalkan: bar penuh berwarna merah
+            progressStatus.setIndicatorColor(
+                ContextCompat.getColor(
+                    root.context,
+                    if (booking.status == BookingStatus.DITOLAK || booking.status == BookingStatus.DIBATALKAN)
+                        R.color.bk_red_dot else R.color.bk_accent
+                )
+            )
             root.setOnClickListener { onClick(booking) }
         }
     }

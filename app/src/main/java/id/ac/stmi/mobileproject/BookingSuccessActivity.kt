@@ -139,13 +139,19 @@ class BookingSuccessActivity : AppCompatActivity() {
         tvSubheading.text = sub
 
         val gagal = status.isFailed()
-        ivStatusIcon.setImageResource(
-            if (gagal) R.drawable.ic_status_cross else R.drawable.ic_svc_check_circle
-        )
-        ImageViewCompat.setImageTintList(
-            ivStatusIcon,
-            ColorStateList.valueOf(getColor(if (gagal) R.color.bk_red_dot else R.color.bk_primary))
-        )
+        if (gagal) {
+            // Ikon silang sudah berwarna sendiri (lingkaran merah + silang putih): tanpa tint/filter
+            ivStatusIcon.setImageResource(R.drawable.ic_status_cross)
+            ImageViewCompat.setImageTintList(ivStatusIcon, null)
+            ivStatusIcon.clearColorFilter()
+        } else {
+            // Ikon centang diwarnai lewat tint
+            ivStatusIcon.setImageResource(R.drawable.ic_svc_check_circle)
+            ImageViewCompat.setImageTintList(
+                ivStatusIcon,
+                ColorStateList.valueOf(getColor(R.color.bk_primary))
+            )
+        }
     }
 
     private fun BookingStatus.isFailed() = this == BookingStatus.DITOLAK || this == BookingStatus.DIBATALKAN

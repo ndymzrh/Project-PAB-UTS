@@ -1,15 +1,25 @@
 <?xml version="1.0" encoding="utf-8"?>
-<vector xmlns:android="http://schemas.android.com/apk/res/android"
-    android:width="72dp"
-    android:height="72dp"
-    android:viewportWidth="72"
-    android:viewportHeight="72">
-    <path
-        android:fillColor="#FFFFFFFF"
-        android:pathData="M36,36m-33,0a33,33 0,1 1,66 0a33,33 0,1 1,-66 0" />
-    <path
-        android:pathData="M25,25L47,47M47,25L25,47"
-        android:strokeColor="#FF000000"
-        android:strokeWidth="5"
-        android:strokeLineCap="round" />
-</vector>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Red Circle Background -->
+    <item>
+        <shape android:shape="oval">
+            <solid android:color="@color/bk_red_dot" />
+            <size android:width="72dp" android:height="72dp" />
+        </shape>
+    </item>
+    <!-- White X Icon in the center -->
+    <item
+        android:gravity="center"
+        android:width="36dp"
+        android:height="36dp">
+        <vector
+            android:width="24dp"
+            android:height="24dp"
+            android:viewportWidth="24"
+            android:viewportHeight="24">
+            <path
+                android:fillColor="#FFFFFF"
+                android:pathData="M19,6.41L17.59,5 12,10.59 6.41,5 5,6.41 10.59,12 5,17.59 6.41,19 12,13.41 17.59,19 19,17.59 13.41,12z" />
+        </vector>
+    </item>
+</layer-list>

@@ -20,8 +20,7 @@
             android:layout_height="72dp"
             android:layout_marginTop="36dp"
             android:contentDescription="@null"
-            android:src="@drawable/ic_svc_check_circle"
-            app:tint="@color/bk_primary" />
+            android:src="@drawable/ic_svc_check_circle" />
 
         <TextView
             android:id="@+id/tvHeading"
