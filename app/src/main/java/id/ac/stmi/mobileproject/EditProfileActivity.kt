@@ -2,11 +2,7 @@ package id.ac.stmi.mobileproject
 
 import android.content.Intent
 import android.os.Bundle
-import android.text.InputType
-import android.util.Patterns
 import android.view.View
-import android.widget.EditText
-import android.widget.LinearLayout
 import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
@@ -14,8 +10,6 @@ import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import com.google.android.material.datepicker.MaterialDatePicker
-import com.google.android.material.dialog.MaterialAlertDialogBuilder
-import com.google.firebase.auth.EmailAuthProvider
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
@@ -35,6 +29,7 @@ import java.util.TimeZone
  *   LAMA  : nama, email, no_hp
  *   BARU  : tgl_lahir (yyyy-MM-dd), jenis_kelamin ("Laki-laki"/"Perempuan"), alamat, kota
  *
+ * Email hanya ditampilkan (tidak bisa diubah).
  * Catatan: kata sandi TIDAK disimpan di Firestore. Kata sandi dikelola Firebase Auth
  * (otomatis ter-hash & aman), jadi diganti lewat user.updatePassword().
  */
@@ -88,12 +83,6 @@ class EditProfileActivity : AppCompatActivity() {
 
         setupClicks()
         loadProfile()
-    }
-
-    // Kalau user baru saja klik link verifikasi email baru, sinkronkan ke Firestore
-    override fun onResume() {
-        super.onResume()
-        if (::uid.isInitialized) syncEmailIfChanged()
     }
 
     // ------------------------------------------------------------------
@@ -198,7 +187,6 @@ class EditProfileActivity : AppCompatActivity() {
     // ------------------------------------------------------------------
     private fun onSaveClicked() {
         val nama = binding.etName.text.toString().trim()
-        val email = binding.etEmail.text.toString().trim()
         val phoneDigits = binding.etPhone.text.toString().filter { it.isDigit() }.trimStart('0')
 
         // --- Validasi ---
@@ -207,41 +195,14 @@ class EditProfileActivity : AppCompatActivity() {
             binding.etName.requestFocus()
             return
         }
-        if (!Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
-            binding.etEmail.error = "Format email tidak valid"
-            binding.etEmail.requestFocus()
-            return
-        }
         if (phoneDigits.length !in 9..13) {
             binding.etPhone.error = "Nomor WhatsApp tidak valid"
             binding.etPhone.requestFocus()
             return
         }
 
-        val user = auth.currentUser ?: return
         setLoading(true)
-
-        if (email != user.email) {
-            // Email berubah -> Firebase mewajibkan login ulang (password) + verifikasi email baru
-            askPassword("Masukkan kata sandi saat ini untuk mengganti email") { password ->
-                reauthenticate(password,
-                    onSuccess = {
-                        user.verifyBeforeUpdateEmail(email)
-                            .addOnSuccessListener {
-                                toast("Link verifikasi dikirim ke $email. Email berubah setelah dikonfirmasi.")
-                                saveToFirestore(nama, phoneDigits)
-                            }
-                            .addOnFailureListener {
-                                setLoading(false)
-                                toast("Gagal mengganti email: ${it.message}")
-                            }
-                    },
-                    onFail = { setLoading(false) }
-                )
-            }
-        } else {
-            saveToFirestore(nama, phoneDigits)
-        }
+        saveToFirestore(nama, phoneDigits)
     }
 
     /**
@@ -273,76 +234,8 @@ class EditProfileActivity : AppCompatActivity() {
     }
 
     // ------------------------------------------------------------------
-    // 6. SINKRON EMAIL SETELAH DIVERIFIKASI
+    // 6. HELPER
     // ------------------------------------------------------------------
-    /**
-     * Email di Firebase Auth baru berganti setelah user klik link di email baru.
-     * Saat itu terjadi, kita samakan juga field "email" di Firestore.
-     */
-    private fun syncEmailIfChanged() {
-        val user = auth.currentUser ?: return
-        user.reload().addOnSuccessListener {
-            val authEmail = auth.currentUser?.email ?: return@addOnSuccessListener
-            db.collection("users").document(uid).get().addOnSuccessListener { snap ->
-                if (snap.getString("email") != authEmail) {
-                    db.collection("users").document(uid).update("email", authEmail)
-                    binding.etEmail.setText(authEmail)
-                }
-            }
-        }
-    }
-
-    // ------------------------------------------------------------------
-    // 7. HELPER
-    // ------------------------------------------------------------------
-    /** Login ulang dengan password (syarat Firebase untuk ganti email / password). */
-    private fun reauthenticate(password: String, onSuccess: () -> Unit, onFail: () -> Unit) {
-        val user = auth.currentUser
-        val mail = user?.email
-        if (user == null || mail == null) {
-            onFail()
-            return
-        }
-        user.reauthenticate(EmailAuthProvider.getCredential(mail, password))
-            .addOnSuccessListener { onSuccess() }
-            .addOnFailureListener {
-                toast("Kata sandi salah")
-                onFail()
-            }
-    }
-
-    /** Dialog kecil berisi satu kolom password. */
-    private fun askPassword(message: String, onOk: (String) -> Unit) {
-        val et = passwordField("Kata sandi saat ini")
-        MaterialAlertDialogBuilder(this)
-            .setTitle("Konfirmasi")
-            .setMessage(message)
-            .setView(dialogContainer(et))
-            .setNegativeButton("Batal") { _, _ -> setLoading(false) }
-            .setOnCancelListener { setLoading(false) }
-            .setPositiveButton("Lanjut") { _, _ ->
-                val pw = et.text.toString()
-                if (pw.isEmpty()) {
-                    setLoading(false)
-                    toast("Kata sandi wajib diisi")
-                } else onOk(pw)
-            }
-            .show()
-    }
-
-    private fun passwordField(hintText: String) = EditText(this).apply {
-        hint = hintText
-        inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
-    }
-
-    /** Bungkus EditText dalam LinearLayout vertikal + padding untuk isi dialog. */
-    private fun dialogContainer(vararg fields: EditText) = LinearLayout(this).apply {
-        orientation = LinearLayout.VERTICAL
-        val pad = (20 * resources.displayMetrics.density).toInt()
-        setPadding(pad, pad / 2, pad, 0)
-        fields.forEach { addView(it) }
-    }
-
     /** Tombol Simpan dimatikan saat proses berjalan supaya tidak terklik dua kali. */
     private fun setLoading(loading: Boolean) {
         binding.btnSave.isEnabled = !loading

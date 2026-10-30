@@ -1,32 +1,32 @@
 package id.ac.stmi.mobileproject
 
+import android.content.Intent
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
-import android.text.Editable
-import android.text.TextWatcher
 import android.util.Log
 import android.view.View
-import android.widget.ArrayAdapter
-import android.widget.AutoCompleteTextView
-import android.widget.ProgressBar
-import android.widget.TextView
 import android.widget.Toast
+import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
-import com.google.android.material.button.MaterialButton
-import com.google.android.material.textfield.TextInputEditText
-import com.google.android.material.textfield.TextInputLayout
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.UserProfileChangeRequest
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.FirebaseFirestoreException
 import com.google.firebase.firestore.SetOptions
+import id.ac.stmi.mobileproject.databinding.ActivityEditProfilPetugasBinding
 
 /**
- * Edit profil petugas/pemilik.
- * Menyimpan ke Firestore petugas/{uid} (merge) + displayName di Firebase Auth.
+ * Edit profil petugas/pemilik — tampilan & alur disamakan dengan EditProfileActivity (customer).
+ *
+ * Data   : Firestore petugas/{uid} (merge): nama, email, telepon, nip, cabang
+ * Cabang : dipilih dari koleksi "bengkel" (yang aktif)
+ * Email  : hanya ditampilkan (tidak bisa diubah)
+ * Nama   : juga disalin ke users/{uid}.nama (best-effort) agar beranda ikut berubah
  * TIDAK pernah menulis field "role" (role hanya di users/{uid}).
  */
 class EditProfilPetugasActivity : AppCompatActivity() {
@@ -34,34 +34,28 @@ class EditProfilPetugasActivity : AppCompatActivity() {
     companion object {
         private const val TAG = "EditProfilPetugas"
         private const val COL_PETUGAS = "petugas"
+        private const val COL_USERS = "users"
+        private const val COL_BENGKEL = "bengkel"
         private const val TIMEOUT_MS = 8000L
-        private val DAFTAR_SHIFT = listOf("Shift Pagi", "Shift Siang", "Shift Malam")
-        private val REGEX_HP = Regex("^(\\+62|62|0)8\\d{7,12}$")
     }
+
+    private lateinit var binding: ActivityEditProfilPetugasBinding
 
     private val auth by lazy { FirebaseAuth.getInstance() }
     private val db by lazy { FirebaseFirestore.getInstance() }
     private val handler = Handler(Looper.getMainLooper())
 
-    private var dimuat = false   // true jika data lama berhasil dibaca dari Firestore
-    private var selesai = false  // mencegah callback ganda (sukses/gagal/timeout)
+    private lateinit var uid: String
 
-    private lateinit var tvAvatarEdit: TextView
-    private lateinit var etEmail: TextInputEditText
-    private lateinit var etIdAkun: TextInputEditText
-    private lateinit var etNama: TextInputEditText
-    private lateinit var etNip: TextInputEditText
-    private lateinit var etTelepon: TextInputEditText
-    private lateinit var etCabang: TextInputEditText
-    private lateinit var actShift: AutoCompleteTextView
-    private lateinit var tilNama: TextInputLayout
-    private lateinit var tilTelepon: TextInputLayout
-    private lateinit var progress: ProgressBar
-    private lateinit var btnSimpan: MaterialButton
+    private var dimuat = false          // true jika data lama berhasil dibaca dari Firestore
+    private var selesai = false         // mencegah callback ganda (sukses/gagal/timeout)
+    private var cabang: String = ""     // cabang terpilih
+    private var daftarCabang: List<String> = emptyList()
 
     private val timeoutRunnable = Runnable {
         if (selesai) return@Runnable
         selesai = true
+        setLoading(false)
         toast("Koneksi lambat, perubahan akan tersinkron otomatis")
         setResult(RESULT_OK)
         finish()
@@ -69,43 +63,27 @@ class EditProfilPetugasActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_edit_profil_petugas)
+        enableEdgeToEdge()
+        binding = ActivityEditProfilPetugasBinding.inflate(layoutInflater)
+        setContentView(binding.root)
 
-        tvAvatarEdit = findViewById(R.id.tvAvatarEdit)
-        etEmail = findViewById(R.id.etEmail)
-        etIdAkun = findViewById(R.id.etIdAkun)
-        etNama = findViewById(R.id.etNama)
-        etNip = findViewById(R.id.etNip)
-        etTelepon = findViewById(R.id.etTelepon)
-        etCabang = findViewById(R.id.etCabang)
-        actShift = findViewById(R.id.actShift)
-        tilNama = findViewById(R.id.tilNama)
-        tilTelepon = findViewById(R.id.tilTelepon)
-        progress = findViewById(R.id.progress)
-        btnSimpan = findViewById(R.id.btnSimpan)
+        // Jarak agar konten tidak tertutup status bar / navigation bar (edge-to-edge)
+        ViewCompat.setOnApplyWindowInsetsListener(binding.main) { v, insets ->
+            val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+            v.setPadding(bars.left, bars.top, bars.right, bars.bottom)
+            insets
+        }
 
-        actShift.setAdapter(
-            ArrayAdapter(this, android.R.layout.simple_list_item_1, DAFTAR_SHIFT)
-        )
+        val currentUid = auth.currentUser?.uid
+        if (currentUid == null) {
+            toast("Silakan login terlebih dahulu")
+            finish()
+            return
+        }
+        uid = currentUid
 
-        etNama.addTextChangedListener(object : TextWatcher {
-            override fun beforeTextChanged(s: CharSequence?, st: Int, c: Int, a: Int) {}
-            override fun onTextChanged(s: CharSequence?, st: Int, b: Int, c: Int) {}
-            override fun afterTextChanged(s: Editable?) {
-                tilNama.error = null
-                tvAvatarEdit.text = inisial(s?.toString().orEmpty())
-            }
-        })
-        etTelepon.addTextChangedListener(object : TextWatcher {
-            override fun beforeTextChanged(s: CharSequence?, st: Int, c: Int, a: Int) {}
-            override fun onTextChanged(s: CharSequence?, st: Int, b: Int, c: Int) {}
-            override fun afterTextChanged(s: Editable?) { tilTelepon.error = null }
-        })
-
-        // Tombol kembali pada top bar
-        findViewById<View>(R.id.btnBack)?.setOnClickListener { finish() }
-        btnSimpan.setOnClickListener { simpan() }
-
+        setupClicks()
+        muatDaftarCabang()
         muatProfil()
     }
 
@@ -114,66 +92,121 @@ class EditProfilPetugasActivity : AppCompatActivity() {
         super.onDestroy()
     }
 
-    // ------------------------------------------------------------ Muat data
+    // ------------------------------------------------------------------ Klik
+
+    private fun setupClicks() {
+        binding.btnBack.setOnClickListener { finish() }
+        binding.btnCancel.setOnClickListener { finish() }
+        binding.btnSave.setOnClickListener { onSaveClicked() }
+        binding.tvCabang.setOnClickListener { pilihCabang() }
+        binding.btnChangePassword.setOnClickListener {
+            startActivity(Intent(this, ChangePasswordActivity::class.java))
+        }
+    }
+
+    // ------------------------------------------------------------------ Muat data
 
     private fun muatProfil() {
-        val user = auth.currentUser
-        if (user == null) {
-            finish()
-            return
-        }
+        val user = auth.currentUser ?: return
 
-        // Tampilkan informasi akun yang terkunci
-        etEmail.setText(user.email.orEmpty())
-        val uid = user.uid
-        val uidTampil = if (uid.length > 8) "${uid.take(4)}…${uid.takeLast(4)}" else uid
-        etIdAkun.setText(uidTampil)
+        binding.tvIdAkun.text = "ID Akun: ${uid.take(8).uppercase()}"
+        binding.etEmail.setText(user.email.orEmpty())
+        binding.tvEmailVerified.visibility = if (user.isEmailVerified) View.VISIBLE else View.GONE
 
-        btnSimpan.isEnabled = false
-        progress.visibility = View.VISIBLE
+        setLoading(true, tampilTeks = false)
 
-        db.collection(COL_PETUGAS).document(user.uid).get()
+        db.collection(COL_PETUGAS).document(uid).get()
             .addOnSuccessListener { doc ->
                 dimuat = true
-                etNama.setText(doc.getString("nama") ?: user.displayName.orEmpty())
-                etNip.setText(doc.getString("nip").orEmpty())
-                etTelepon.setText(doc.getString("telepon").orEmpty())
-                etCabang.setText(doc.getString("cabang").orEmpty())
-                actShift.setText(doc.getString("shift").orEmpty(), false)
-                selesaiMuat()
+                val nama = doc.getString("nama") ?: user.displayName.orEmpty()
+                binding.etName.setText(nama)
+                binding.etPhone.setText(stripCountryCode(doc.getString("telepon").orEmpty()))
+                binding.etNip.setText(doc.getString("nip").orEmpty())
+                setCabang(doc.getString("cabang").orEmpty())
+                tampilHeader(nama)
+                setLoading(false)
             }
             .addOnFailureListener {
                 Log.e(TAG, "Gagal memuat profil", it)
-                etNama.setText(user.displayName.orEmpty())
+                val nama = user.displayName.orEmpty()
+                binding.etName.setText(nama)
+                tampilHeader(nama)
                 toast("Data lama tidak terbaca, isi yang ingin diubah saja")
-                selesaiMuat()
+                setLoading(false)
             }
     }
 
-    private fun selesaiMuat() {
-        progress.visibility = View.GONE
-        btnSimpan.isEnabled = true
-        tvAvatarEdit.text = inisial(etNama.text.toString())
+    private fun tampilHeader(nama: String) {
+        binding.tvHeaderName.text = nama.ifBlank { "Petugas" }
+        binding.tvAvatar.text = initialsOf(nama)
     }
 
-    // ------------------------------------------------------------ Simpan
+    // ------------------------------------------------------------------ Cabang
 
-    private fun simpan() {
-        val user = auth.currentUser ?: return
+    /** Pilihan cabang diambil dari koleksi "bengkel" di Firestore (hanya yang aktif). */
+    private fun muatDaftarCabang() {
+        db.collection(COL_BENGKEL).get()
+            .addOnSuccessListener { snap ->
+                daftarCabang = snap.documents
+                    .filter { it.getBoolean("aktif") != false }
+                    .mapNotNull { it.getString("nama")?.trim()?.takeIf { n -> n.isNotEmpty() } }
+                    .distinct()
+                    .sorted()
+                if (daftarCabang.isEmpty()) toast("Belum ada data cabang di database")
+            }
+            .addOnFailureListener {
+                Log.e(TAG, "Gagal memuat daftar cabang", it)
+                toast("Daftar cabang gagal dimuat")
+            }
+    }
 
-        val nama = etNama.text.toString().trim()
-        val telepon = etTelepon.text.toString().trim().replace(" ", "").replace("-", "")
+    private fun pilihCabang() {
+        if (daftarCabang.isEmpty()) {
+            toast("Daftar cabang belum tersedia")
+            return
+        }
+        val pilihan = daftarCabang.toTypedArray()
+        val terpilih = pilihan.indexOf(cabang)
+        MaterialAlertDialogBuilder(this)
+            .setTitle("Pilih Cabang")
+            .setSingleChoiceItems(pilihan, terpilih) { dialog, which ->
+                setCabang(pilihan[which])
+                dialog.dismiss()
+            }
+            .setNegativeButton("Batal", null)
+            .show()
+    }
+
+    private fun setCabang(nilai: String) {
+        cabang = nilai
+        binding.tvCabang.text = nilai
+    }
+
+    // ------------------------------------------------------------------ Simpan
+
+    private fun onSaveClicked() {
+        val nama = binding.etName.text.toString().trim()
+        val phoneDigits = binding.etPhone.text.toString().filter { it.isDigit() }.trimStart('0')
 
         if (nama.length < 3) {
-            tilNama.error = "Nama minimal 3 karakter"
-            etNama.requestFocus()
+            binding.etName.error = "Nama minimal 3 karakter"
+            binding.etName.requestFocus()
             return
         }
-        if (telepon.isNotEmpty() && !REGEX_HP.matches(telepon)) {
-            tilTelepon.error = "Nomor HP tidak valid (contoh: 08123456789)"
-            etTelepon.requestFocus()
+        if (phoneDigits.isNotEmpty() && phoneDigits.length !in 9..13) {
+            binding.etPhone.error = "Nomor HP tidak valid"
+            binding.etPhone.requestFocus()
             return
         }
+
+        setLoading(true)
+        simpanKeFirestore(nama, phoneDigits)
+    }
+
+    /** Tulis ke petugas/{uid} (merge). Field lain tidak terhapus. */
+    private fun simpanKeFirestore(nama: String, phoneDigits: String) {
+        val user = auth.currentUser ?: return
+        val telepon = if (phoneDigits.isEmpty()) "" else "+62$phoneDigits"
 
         val data = hashMapOf<String, Any>(
             "nama" to nama,
@@ -184,30 +217,35 @@ class EditProfilPetugasActivity : AppCompatActivity() {
         fun opsional(key: String, nilai: String) {
             if (dimuat || nilai.isNotEmpty()) data[key] = nilai
         }
-        opsional("nip", etNip.text.toString().trim())
+        opsional("nip", binding.etNip.text.toString().trim())
         opsional("telepon", telepon)
-        opsional("cabang", etCabang.text.toString().trim())
-        opsional("shift", actShift.text.toString().trim())
+        opsional("cabang", cabang.trim())
 
-        setLoading(true)
         selesai = false
         handler.postDelayed(timeoutRunnable, TIMEOUT_MS)
 
-        db.collection(COL_PETUGAS).document(user.uid)
+        db.collection(COL_PETUGAS).document(uid)
             .set(data, SetOptions.merge())
-            .addOnSuccessListener { berhasil(user, nama) }
+            .addOnSuccessListener { berhasil(nama) }
             .addOnFailureListener { gagal(it) }
     }
 
-    private fun berhasil(user: FirebaseUser, nama: String) {
+    private fun berhasil(nama: String) {
         if (selesai) return
         selesai = true
         handler.removeCallbacks(timeoutRunnable)
 
-        user.updateProfile(UserProfileChangeRequest.Builder().setDisplayName(nama).build())
-            .addOnFailureListener { Log.w(TAG, "displayName gagal diperbarui", it) }
+        val user = auth.currentUser
+        user?.updateProfile(UserProfileChangeRequest.Builder().setDisplayName(nama).build())
+            ?.addOnFailureListener { Log.w(TAG, "displayName gagal diperbarui", it) }
 
-        toast("Profil berhasil disimpan")
+        // Salin nama ke users/{uid} agar beranda ikut berubah (gagal pun tidak masalah)
+        db.collection(COL_USERS).document(uid)
+            .set(hashMapOf<String, Any>("nama" to nama), SetOptions.merge())
+            .addOnFailureListener { Log.w(TAG, "users.nama tidak diperbarui", it) }
+
+        setLoading(false)
+        toast("Profil berhasil diperbarui")
         setResult(RESULT_OK)
         finish()
     }
@@ -225,20 +263,32 @@ class EditProfilPetugasActivity : AppCompatActivity() {
         toast(pesan)
     }
 
-    private fun setLoading(loading: Boolean) {
-        progress.visibility = if (loading) View.VISIBLE else View.GONE
-        btnSimpan.isEnabled = !loading
-        btnSimpan.text = if (loading) "Menyimpan..." else "Simpan Perubahan"
+    // ------------------------------------------------------------------ Helper
+
+    /** Tombol Simpan dimatikan saat proses berjalan supaya tidak terklik dua kali. */
+    private fun setLoading(loading: Boolean, tampilTeks: Boolean = true) {
+        binding.progress.visibility = if (loading) View.VISIBLE else View.GONE
+        binding.btnSave.isEnabled = !loading
+        binding.btnSave.alpha = if (loading) 0.6f else 1f
+        if (tampilTeks) binding.btnSave.text = if (loading) "Menyimpan..." else "Simpan Perubahan"
     }
 
-    private fun inisial(nama: String): String {
-        val kata = nama.trim().split(Regex("\\s+")).filter { it.isNotEmpty() }
+    /** "+628123456789" / "08123456789" / "628123456789" -> "8123456789" */
+    private fun stripCountryCode(raw: String): String {
+        val digits = raw.filter { it.isDigit() }
         return when {
-            kata.isEmpty() -> "P"
-            kata.size == 1 -> kata[0].take(1).uppercase()
-            else -> "${kata[0][0]}${kata[1][0]}".uppercase()
+            digits.startsWith("62") -> digits.removePrefix("62")
+            digits.startsWith("0") -> digits.removePrefix("0")
+            else -> digits
         }
     }
 
-    private fun toast(msg: String) = Toast.makeText(this, msg, Toast.LENGTH_SHORT).show()
+    private fun initialsOf(name: String): String =
+        name.trim().split(" ")
+            .filter { it.isNotBlank() }
+            .take(2)
+            .joinToString("") { it.first().uppercase() }
+            .ifEmpty { "P" }
+
+    private fun toast(msg: String) = Toast.makeText(this, msg, Toast.LENGTH_LONG).show()
 }

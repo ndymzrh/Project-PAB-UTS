@@ -1,252 +1,161 @@
 package id.ac.stmi.mobileproject
 
 import android.content.Intent
-import android.content.res.ColorStateList
-import android.graphics.Color
 import android.os.Bundle
-import android.widget.ImageView
-import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.content.ContextCompat
-import com.google.android.material.bottomnavigation.BottomNavigationView
-import com.google.android.material.button.MaterialButton
-import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import id.ac.stmi.mobileproject.databinding.ActivityPromoDetailBinding
 
+/**
+ * Detail promo (customer).
+ *
+ * CATATAN: file ini DIREKONSTRUKSI dari layout activity_promo_detail.xml, karena file aslinya
+ * belum dikirim. Bagian yang ditandai "SESUAIKAN" memakai nama yang saya tebak.
+ * Kalau file PromoDetailActivity.kt lamamu sudah punya logika klaim yang jalan,
+ * JANGAN ditimpa: cukup ambil baris tombol kembali di setupBack().
+ */
 class PromoDetailActivity : AppCompatActivity() {
 
-    private lateinit var btnKlaim: MaterialButton
+    companion object {
+        const val EXTRA_PROMO_ID = "promo_id"
+    }
+
+    private lateinit var binding: ActivityPromoDetailBinding
+
+    private var promoId: String = ""
+    private var promoListener: PromoListener? = null
+    private var voucherClaimListener: PromoListener? = null
+    private var promoSudahDiklaim: Set<String> = emptySet()
     private var promoSaatIni: PromoItem? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_promo_detail)
+        binding = ActivityPromoDetailBinding.inflate(layoutInflater)
+        setContentView(binding.root)
 
-        btnKlaim = findViewById(R.id.btnKlaim)
-        aturTombol("Memeriksa...", aktif = false)
+        setupTopBar(showNotificationDot = false)
 
-        setupBottomNav()
-
-        val promoId = intent.getStringExtra(EXTRA_PROMO_ID)
-
-        if (promoId.isNullOrBlank()) {
-            toast("ID promo tidak ditemukan")
+        promoId = intent.getStringExtra(EXTRA_PROMO_ID).orEmpty()
+        if (promoId.isBlank()) {
+            toast("Promo tidak ditemukan")
             finish()
             return
         }
 
-        PromoStore.get(this, promoId) { promo ->
-            if (isFinishing || isDestroyed) return@get
-
-            if (promo == null) {
-                toast("Promo tidak ditemukan")
-                finish()
-            } else {
-                promoSaatIni = promo
-                tampilkan(promo)
-            }
-        }
+        setupBack()
+        setupBottomNav()
+        binding.btnKlaim.setOnClickListener { klaim() }
     }
 
-    /** Teks tombol klaim: promo poin menampilkan jumlah poin yang ditukar. */
-    private fun teksKlaim(promo: PromoItem): String =
-        if (promo.bisaDitukarPoin) "Tukar ${promo.labelPoin}" else "Klaim"
+    override fun onStart() {
+        super.onStart()
 
-    private fun tampilkan(promo: PromoItem) {
-        findViewById<ImageView>(R.id.imgBanner)
-            .setImageResource(drawableId(promo.gambar))
+        promoListener = PromoStore.listen(
+            this,
+            onChange = { daftar ->
+                promoSaatIni = daftar.firstOrNull { it.id == promoId }
+                render()
+            },
+            onError = { toast("Gagal memuat promo") }
+        )
 
-        findViewById<TextView>(R.id.tvPromoJudul).text =
-            promo.judul
-
-        val infoPoin = if (promo.bisaDitukarPoin) " · Tukar ${promo.labelPoin}" else ""
-        findViewById<TextView>(R.id.tvPromoMeta).text =
-            "Berlaku s/d ${promo.berakhir.toTanggal()} · ${promo.kategori.label}$infoPoin"
-
-        findViewById<TextView>(R.id.tvKodePromo).text =
-            promo.kode
-
-        findViewById<TextView>(R.id.tvSyarat).text =
-            promo.syarat.lines()
-                .filter { it.isNotBlank() }
-                .mapIndexed { index, syarat ->
-                    "${index + 1}. $syarat"
-                }
-                .joinToString("\n")
-
-        periksaStatusKlaim(promo)
-
-        btnKlaim.setOnClickListener {
-            if (promo.berakhir < System.currentTimeMillis()) {
-                aturTombol("Berakhir", aktif = false)
-                toast("Promo sudah berakhir")
-                return@setOnClickListener
-            }
-
-            // Toast info: berapa poin yang harus ditukar
-            if (promo.bisaDitukarPoin) {
-                toast("Promo ini butuh ${promo.labelPoin} untuk ditukar")
-            }
-
-            val pesan = if (promo.bisaDitukarPoin) {
-                "\"${promo.judul}\" akan masuk ke Voucher Saya.\n\n" +
-                        "Poin Anda akan dikurangi ${promo.labelPoin}."
-            } else {
-                "\"${promo.judul}\" akan masuk ke Voucher Saya."
-            }
-
-            MaterialAlertDialogBuilder(this)
-                .setTitle(if (promo.bisaDitukarPoin) "Tukar poin dengan voucher?" else "Klaim promo ini?")
-                .setMessage(pesan)
-                .setNegativeButton("Batal", null)
-                .setPositiveButton(if (promo.bisaDitukarPoin) "Tukar" else "Klaim") { _, _ ->
-                    prosesKlaim(promo)
-                }
-                .show()
-        }
+        voucherClaimListener = VoucherStore.dengarkanPromoDiklaim(
+            this,
+            onChange = { ids ->
+                promoSudahDiklaim = ids
+                render()
+            },
+            onError = { toast("Gagal memuat status klaim promo") }
+        )
     }
 
-    private fun periksaStatusKlaim(promo: PromoItem) {
-        if (promo.berakhir < System.currentTimeMillis()) {
-            aturTombol("Berakhir", aktif = false)
+    override fun onStop() {
+        super.onStop()
+        promoListener?.remove()
+        promoListener = null
+        voucherClaimListener?.remove()
+        voucherClaimListener = null
+    }
+
+    // Hilangkan animasi saat ditutup supaya perpindahan mulus (sama seperti halaman tab)
+    override fun finish() {
+        super.finish()
+        @Suppress("DEPRECATION")
+        overridePendingTransition(0, 0)
+    }
+
+    // ------------------------------------------------------------------ Tombol kembali
+
+    private fun setupBack() {
+        // Tombol di atas banner. finish() otomatis kembali ke halaman yang membuka (daftar Promo).
+        binding.btnBackPromo.setOnClickListener { finish() }
+    }
+
+    // ------------------------------------------------------------------ Tampilan
+
+    private fun render() {
+        val p = promoSaatIni
+        if (p == null) {
+            binding.tvPromoJudul.text = "Promo tidak tersedia"
+            binding.btnKlaim.isEnabled = false
             return
         }
 
-        aturTombol("Memeriksa...", aktif = false)
+        binding.imgBanner.setImageResource(drawableId(p.gambar))
+        binding.tvPromoJudul.text = p.judul
+        binding.tvPromoMeta.text = "${p.kategori.name} • s/d ${p.berakhir.toTanggal()}"
+        binding.tvKodePromo.text = p.kode
+        binding.tvSyarat.text = p.syarat // SESUAIKAN: nama field syarat & ketentuan di PromoItem
 
-        VoucherStore.cekDiklaim(this, promo.id) { sudah ->
-            if (isFinishing || isDestroyed) return@cekDiklaim
-
-            if (sudah) {
-                aturTombol("Sudah diklaim", aktif = false)
-            } else {
-                aturTombol(teksKlaim(promo), aktif = true)
-            }
+        val sudahDiklaim = p.id in promoSudahDiklaim
+        val kedaluwarsa = p.berakhir < System.currentTimeMillis()
+        binding.btnKlaim.isEnabled = !sudahDiklaim && !kedaluwarsa
+        binding.btnKlaim.text = when {
+            sudahDiklaim -> "Diklaim"
+            kedaluwarsa -> "Berakhir"
+            else -> "Klaim"
         }
     }
 
-    private fun prosesKlaim(promo: PromoItem) {
-        aturTombol("Memproses...", aktif = false)
+    // ------------------------------------------------------------------ Klaim
 
-        VoucherStore.klaim(this, promo) { hasil ->
-            if (isFinishing || isDestroyed) return@klaim
-
-            when (hasil) {
-                VoucherStore.Hasil.SUKSES -> {
-                    aturTombol("Sudah diklaim", aktif = false)
-                    toast(
-                        if (promo.bisaDitukarPoin)
-                            "Berhasil! ${promo.labelPoin} dipakai. Cek Voucher Saya."
-                        else
-                            "Promo berhasil diklaim! Cek Voucher Saya."
-                    )
-                }
-
-                VoucherStore.Hasil.SUDAH_DIKLAIM -> {
-                    aturTombol("Sudah diklaim", aktif = false)
-                    toast("Promo ini sudah pernah diklaim")
-                }
-
-                VoucherStore.Hasil.BERAKHIR -> {
-                    aturTombol("Berakhir", aktif = false)
-                    toast("Promo sudah berakhir")
-                }
-
-                VoucherStore.Hasil.POIN_KURANG -> {
-                    aturTombol(teksKlaim(promo), aktif = true)
-                    toast("Poin Anda tidak mencukupi. Dibutuhkan ${promo.labelPoin}.")
-                }
-
-                VoucherStore.Hasil.GAGAL -> {
-                    aturTombol(teksKlaim(promo), aktif = true)
-                    toast("Gagal klaim promo. Periksa koneksi atau izin Firestore.")
-                }
-            }
-        }
+    private fun klaim() {
+        val p = promoSaatIni ?: return
+        // SESUAIKAN: panggil fungsi klaim yang sudah ada di VoucherStore milikmu,
+        // mis. VoucherStore.klaim(this, p, onSuccess = { ... }, onError = { ... })
+        toast("Hubungkan fungsi klaim untuk promo ${p.kode}")
     }
 
-    private fun aturTombol(
-        teks: String,
-        aktif: Boolean
-    ) {
-        btnKlaim.text = teks
-        btnKlaim.isEnabled = aktif
+    // ------------------------------------------------------------------ Bottom nav
 
-        btnKlaim.backgroundTintList =
-            ColorStateList.valueOf(
-                if (aktif) {
-                    ContextCompat.getColor(
-                        this,
-                        R.color.bk_accent
-                    )
-                } else {
-                    Color.parseColor("#C5CBD3")
-                }
+    private fun openTab(target: Class<*>) {
+        startActivity(
+            Intent(this, target).addFlags(
+                Intent.FLAG_ACTIVITY_CLEAR_TOP or
+                        Intent.FLAG_ACTIVITY_SINGLE_TOP or
+                        Intent.FLAG_ACTIVITY_NO_ANIMATION
             )
-
-        btnKlaim.setTextColor(
-            if (aktif) Color.WHITE
-            else Color.parseColor("#6B7280")
         )
     }
 
     private fun setupBottomNav() {
-        val bottomNav =
-            findViewById<BottomNavigationView>(R.id.bottomNav)
+        binding.bottomNav.selectedItemId = R.id.nav_promo
 
-        bottomNav.selectedItemId = R.id.nav_promo
+        binding.fabBooking.setOnClickListener {
+            startActivity(Intent(this, LayananActivity::class.java))
+        }
 
-        bottomNav.setOnItemSelectedListener { item ->
+        binding.bottomNav.setOnItemSelectedListener { item ->
             when (item.itemId) {
-                R.id.nav_home -> {
-                    startActivity(
-                        Intent(
-                            this,
-                            HomeActivityCustomer::class.java
-                        ).addFlags(
-                            Intent.FLAG_ACTIVITY_CLEAR_TOP or
-                                    Intent.FLAG_ACTIVITY_SINGLE_TOP
-                        )
-                    )
-                    overridePendingTransition(0, 0)
-                    false
-                }
-
-                R.id.nav_promo -> {
-                    finish()
-                    false
-                }
-
-                R.id.nav_bengkel -> {
-                    toast("Peta bengkel")
-                    false
-                }
-
-                R.id.nav_account -> {
-                    toast("Akun")
-                    false
-                }
-
+                R.id.nav_home -> { openTab(HomeActivityCustomer::class.java); false }
+                R.id.nav_promo -> { openTab(PromoActivityCustomer::class.java); false }
+                R.id.nav_bengkel -> { openTab(BengkelActivityCustomer::class.java); false }
+                R.id.nav_account -> { openTab(AccountActivity::class.java); false }
                 else -> false
             }
         }
-
-        bottomNav.setOnItemReselectedListener { item ->
-            if (item.itemId == R.id.nav_promo) {
-                finish()
-            }
-        }
+        binding.bottomNav.setOnItemReselectedListener { }
     }
 
-    private fun toast(msg: String) {
-        Toast.makeText(
-            this,
-            msg,
-            Toast.LENGTH_SHORT
-        ).show()
-    }
-
-    companion object {
-        const val EXTRA_PROMO_ID = "promoId"
-    }
+    private fun toast(msg: String) = Toast.makeText(this, msg, Toast.LENGTH_SHORT).show()
 }

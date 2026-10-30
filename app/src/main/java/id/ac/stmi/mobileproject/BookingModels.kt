@@ -1,6 +1,7 @@
 package id.ac.stmi.mobileproject
 
 import com.google.firebase.Timestamp
+import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
@@ -214,6 +215,23 @@ object BookingRepository {
                 "status" to status.name,
                 "updatedAt" to FieldValue.serverTimestamp()
             )
+
+            // Catat petugas/admin yang menangani booking (dipakai untuk "Total Servis Ditangani").
+            // - Saat SELESAI: petugas yang menyelesaikan dicatat sebagai penangani.
+            // - Status lain: dicatat hanya jika belum ada penangani.
+            val petugasUid = FirebaseAuth.getInstance().currentUser?.uid
+            if (!petugasUid.isNullOrBlank()) {
+                val petugasLama = booking.getString("petugasId")
+                if (status == BookingStatus.SELESAI || petugasLama.isNullOrBlank()) {
+                    updates["petugasId"] = petugasUid
+                }
+            }
+
+            // Catat kapan & siapa yang mengonfirmasi booking (statistik petugas)
+            if (status == BookingStatus.DIKONFIRMASI && !petugasUid.isNullOrBlank()) {
+                updates["confirmedAt"] = FieldValue.serverTimestamp()
+                updates["confirmedBy"] = petugasUid
+            }
 
             if (status == BookingStatus.SELESAI) {
                 updates["completedAt"] = FieldValue.serverTimestamp()
