@@ -9,41 +9,38 @@
     android:orientation="vertical"
     tools:context=".VoucherSayaActivity">
 
-    <!-- ============ HEADER ============ -->
-    <com.google.android.material.card.MaterialCardView
+    <!-- ============ HEADER (MENGGUNAKAN TOOLBAR AGAR FILE .KT TIDAK ERROR) ============ -->
+    <LinearLayout
+        android:id="@+id/header"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_margin="12dp"
-        app:cardBackgroundColor="@android:color/white"
-        app:cardCornerRadius="16dp"
-        app:cardElevation="3dp">
+        android:background="@drawable/bg_header"
+        android:elevation="4dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
 
-        <LinearLayout
-            android:layout_width="match_parent"
+        <com.google.android.material.appbar.MaterialToolbar
+            android:id="@+id/toolbar"
+            android:layout_width="0dp"
+            android:layout_height="?attr/actionBarSize"
+            android:layout_weight="1"
+            android:background="@android:color/transparent"
+            app:navigationIcon="?attr/homeAsUpIndicator"
+            app:navigationIconTint="@android:color/white"
+            app:title="Voucher Saya"
+            app:titleTextColor="@android:color/white" />
+
+        <TextView
+            android:id="@+id/tvTotalVoucher"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:gravity="center_vertical"
-            android:orientation="horizontal">
+            android:layout_marginEnd="16dp"
+            android:text="0 voucher"
+            android:textColor="@color/bk_accent"
+            android:textSize="14sp"
+            android:textStyle="bold" />
 
-            <com.google.android.material.appbar.MaterialToolbar
-                android:id="@+id/toolbar"
-                android:layout_width="0dp"
-                android:layout_height="?attr/actionBarSize"
-                android:layout_weight="1"
-                app:navigationIcon="?attr/homeAsUpIndicator"
-                app:title="Voucher Saya"
-                app:titleTextColor="@color/bk_primary" />
-
-            <TextView
-                android:id="@+id/tvTotalVoucher"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginEnd="16dp"
-                android:text="0 voucher"
-                android:textColor="@color/bk_accent"
-                android:textSize="14sp"
-                android:textStyle="bold" />
-        </LinearLayout>
-    </com.google.android.material.card.MaterialCardView>
+    </LinearLayout>
 
     <!-- ============ TAB FILTER ============ -->
     <com.google.android.material.tabs.TabLayout

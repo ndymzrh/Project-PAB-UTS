@@ -70,7 +70,7 @@ private data class CategoryMeta(val label: String, val icon: Int, val filter: St
 private fun metaOf(kategori: String) = when (kategori) {
     "status_servis" -> CategoryMeta("Status Servis", R.drawable.ic_build, FILTER_SERVIS)
     "servis_selesai" -> CategoryMeta("Servis Selesai", R.drawable.ic_svc_check_circle, FILTER_SERVIS)
-    "booking" -> CategoryMeta("Booking Dikonfirmasi", R.drawable.ic_calendar, FILTER_BOOKING)
+    "booking" -> CategoryMeta("Booking", R.drawable.ic_calendar, FILTER_BOOKING)
     "pengingat" -> CategoryMeta("Pengingat Jadwal", R.drawable.ic_notification, FILTER_BOOKING)
     "promo" -> CategoryMeta("Promo", R.drawable.ic_gift, FILTER_INFO)
     else -> CategoryMeta("Info Bengkel", R.drawable.ic_svc_info, FILTER_INFO)
@@ -161,6 +161,7 @@ class NotificationActivity : AppCompatActivity() {
         binding.rvNotif.adapter = adapter
 
         setupClicks()
+        BookingNotificationSync.start(this) // ubah status booking -> notifikasi
         listenNotifications()
 
         // UJI COBA: hapus tanda // di bawah, jalankan SEKALI, lalu beri // lagi.
@@ -180,26 +181,28 @@ class NotificationActivity : AppCompatActivity() {
     // ------------------------------------------------------------------
     // 1. AMBIL DATA (real-time): notifikasi baru langsung muncul sendiri
     // ------------------------------------------------------------------
-    private fun listenNotifications() {
+    private fun listenNotifications() = observeWhileStarted {
         db.collection("users").document(uid).collection("notifications")
             .orderBy("waktu", Query.Direction.DESCENDING)
-            .addSnapshotListener(this) { snap, error ->
+            .addSnapshotListener { snap, error ->
                 if (error != null) {
                     toast("Gagal memuat notifikasi")
                     return@addSnapshotListener
                 }
-                allItems = snap?.documents.orEmpty().map { d ->
-                    NotificationItem(
-                        id = d.id,
-                        judul = d.getString("judul") ?: "",
-                        isi = d.getString("isi") ?: "",
-                        kategori = d.getString("kategori") ?: "",
-                        waktu = d.getTimestamp("waktu")?.toDate() ?: Date(),
-                        dibaca = d.getBoolean("dibaca") ?: false,
-                        aksiLabel = d.getString("aksi_label") ?: "",
-                        aksiTarget = d.getString("aksi_target") ?: ""
-                    )
-                }
+                allItems = snap?.documents.orEmpty()
+                    .filter { it.getBoolean("dihapus") != true }
+                    .map { d ->
+                        NotificationItem(
+                            id = d.id,
+                            judul = d.getString("judul") ?: "",
+                            isi = d.getString("isi") ?: "",
+                            kategori = d.getString("kategori") ?: "",
+                            waktu = d.getTimestamp("waktu")?.toDate() ?: Date(),
+                            dibaca = d.getBoolean("dibaca") ?: false,
+                            aksiLabel = d.getString("aksi_label") ?: "",
+                            aksiTarget = d.getString("aksi_target") ?: ""
+                        )
+                    }
                 render()
             }
     }
@@ -268,8 +271,12 @@ class NotificationActivity : AppCompatActivity() {
         batch.commit().addOnFailureListener { toast("Gagal: ${it.message}") }
     }
 
+    /**
+     * "Hapus" = disembunyikan (dihapus = true), bukan delete dokumen.
+     * Kalau benar-benar didelete, pemantau status booking akan membuatnya lagi.
+     */
     private fun delete(item: NotificationItem) {
-        notifRef(item.id).delete()
+        notifRef(item.id).update(mapOf("dihapus" to true, "dibaca" to true))
             .addOnFailureListener { toast("Gagal menghapus: ${it.message}") }
     }
 

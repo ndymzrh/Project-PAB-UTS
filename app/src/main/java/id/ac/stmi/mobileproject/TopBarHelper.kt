@@ -5,12 +5,15 @@ import android.graphics.Color
 import android.widget.Toast
 import android.content.Intent
 import android.view.View
+import androidx.lifecycle.DefaultLifecycleObserver
+import androidx.lifecycle.LifecycleOwner
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.ListenerRegistration
 import com.google.android.material.appbar.MaterialToolbar
 import com.google.android.material.badge.BadgeDrawable
 import com.google.android.material.badge.BadgeUtils
@@ -40,7 +43,9 @@ fun Activity.setupTopBar(
     // Titik merah pada ikon notifikasi (menggantikan View bg_dot_red lama)
     val badge = BadgeDrawable.create(this).apply {
         backgroundColor = Color.parseColor("#D32F2F")
-        isVisible = showNotificationDot
+        // Awalnya disembunyikan; tampil/tidaknya ditentukan data Firestore di bawah.
+        // (parameter showNotificationDot dipertahankan agar pemanggil lama tidak error)
+        isVisible = false
     }
     toolbar.post {
         BadgeUtils.attachBadgeDrawable(badge, toolbar, R.id.action_notification)
@@ -50,17 +55,45 @@ fun Activity.setupTopBar(
     // Muncul kalau ada notifikasi dengan dibaca == false, hilang kalau semuanya sudah dibaca.
     // Listener otomatis berhenti saat halaman ditutup (dilepas ke Activity).
     FirebaseAuth.getInstance().currentUser?.uid?.let { uid ->
-        FirebaseFirestore.getInstance()
-            .collection("users").document(uid)
-            .collection("notifications")
-            .whereEqualTo("dibaca", false)
-            .addSnapshotListener(this) { snap, error ->
-                if (error != null) return@addSnapshotListener
-                badge.isVisible = (snap?.size() ?: 0) > 0
-            }
+        // observeWhileStarted: pemantau dipasang lagi SETIAP halaman kembali tampil,
+        // jadi setelah kembali dari halaman Notifikasi titik merah ikut diperbarui.
+        observeWhileStarted {
+            FirebaseFirestore.getInstance()
+                .collection("users").document(uid)
+                .collection("notifications")
+                .whereEqualTo("dibaca", false)
+                .addSnapshotListener { snap, error ->
+                    if (error != null) return@addSnapshotListener
+                    badge.isVisible = (snap?.size() ?: 0) > 0
+                }
+        }
     }
 
+    // BARU: ubah status booking oleh petugas -> jadi notifikasi di sisi pelanggan
+    BookingNotificationSync.start(this)
+
     return badge
+}
+
+/**
+ * Memasang listener Firestore saat halaman tampil (onStart) dan melepasnya saat halaman
+ * tidak tampil (onStop). Berbeda dengan addSnapshotListener(activity, ...) yang hanya
+ * dipasang sekali dan TIDAK menyala lagi ketika kembali dari halaman lain.
+ */
+fun Activity.observeWhileStarted(register: () -> ListenerRegistration) {
+    val owner = this as? LifecycleOwner ?: return
+    var registration: ListenerRegistration? = null
+    owner.lifecycle.addObserver(object : DefaultLifecycleObserver {
+        override fun onStart(owner: LifecycleOwner) {
+            registration?.remove()
+            registration = register()
+        }
+
+        override fun onStop(owner: LifecycleOwner) {
+            registration?.remove()
+            registration = null
+        }
+    })
 }
 
 private fun Activity.toastTopBar(msg: String) =

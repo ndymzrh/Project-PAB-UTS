@@ -14,13 +14,13 @@ import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import com.google.android.material.bottomnavigation.BottomNavigationView
-import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.firestore.Query
-import java.util.Calendar
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 /**
  * Halaman akun petugas / pemilik (Firebase Auth + Firestore realtime).
@@ -36,12 +36,12 @@ class AccountPetugasActivity : AppCompatActivity() {
         private const val COL_BOOKING = "bookings"
 
         private const val FIELD_PETUGAS = "petugasId"
-        private const val FIELD_TANGGAL = "completedAt"
         private val STATUS_SELESAI = listOf("SELESAI", "DISERAHKAN")
 
         private const val HALAMAN_ANTREAN = "BookingPetugasActivity"
         private const val HALAMAN_BANTUAN = "BantuanPetugasActivity"
         private const val HALAMAN_LAPORAN_PEMILIK = "LaporanPendapatanActivity"
+        private const val HALAMAN_EDIT_PROFIL = "EditProfilPetugasActivity"
         private const val HALAMAN_HOME = "HomeActivityPetugas"
         private const val HALAMAN_LOGIN = "LoginActivity"
     }
@@ -57,8 +57,11 @@ class AccountPetugasActivity : AppCompatActivity() {
     private val db by lazy { FirebaseFirestore.getInstance() }
     private val listeners = mutableListOf<ListenerRegistration>()
     private var regServis: ListenerRegistration? = null
+    private var regKonfirmasi: ListenerRegistration? = null
 
     private var isPemilik = false
+    private var namaPetugas: String? = null // petugas/{uid}.nama (diubah lewat Edit Profil)
+    private var namaUsers: String? = null   // users/{uid}.nama (data awal saat daftar)
     private var roleDimuat = false
 
     private lateinit var tvAvatarPetugas: TextView
@@ -69,7 +72,12 @@ class AccountPetugasActivity : AppCompatActivity() {
     private lateinit var tvStatusAktif: TextView
     private lateinit var tvRoleChip: TextView
     private lateinit var tvServisCount: TextView
-    private lateinit var tvShift: TextView
+    private lateinit var llStatServis: View
+    private lateinit var tvTerakhirKonfirmasi: TextView
+    private lateinit var tvTerakhirSelesai: TextView
+    private lateinit var tvTelepon: TextView
+    private lateinit var tvEmail: TextView
+    private lateinit var tvBergabung: TextView
     private lateinit var btnEditProfilTop: View
     private lateinit var llMenuContainer: LinearLayout
     private lateinit var menuLogout: View
@@ -99,6 +107,8 @@ class AccountPetugasActivity : AppCompatActivity() {
     override fun onStop() {
         regServis?.remove()
         regServis = null
+        regKonfirmasi?.remove()
+        regKonfirmasi = null
         listeners.forEach { it.remove() }
         listeners.clear()
         super.onStop()
@@ -122,7 +132,13 @@ class AccountPetugasActivity : AppCompatActivity() {
         tvStatusAktif = findViewById(R.id.tvStatusAktif)
         tvRoleChip = findViewById(R.id.tvRoleChip)
         tvServisCount = findViewById(R.id.tvServisCount)
-        tvShift = findViewById(R.id.tvShift)
+        tvTerakhirKonfirmasi = findViewById(R.id.tvTerakhirKonfirmasi)
+        tvTerakhirSelesai = findViewById(R.id.tvTerakhirSelesai)
+        tvTelepon = findViewById(R.id.tvTelepon)
+        tvEmail = findViewById(R.id.tvEmail)
+        tvBergabung = findViewById(R.id.tvBergabung)
+        llStatServis = findViewById(R.id.llStatServis)
+        llStatServis.visibility = View.GONE // tampil hanya untuk petugas, setelah role terbaca dari Firebase
         btnEditProfilTop = findViewById(R.id.btnEditProfilTop)
         llMenuContainer = findViewById(R.id.llMenuContainer)
         menuLogout = findViewById(R.id.menuLogout)
@@ -161,9 +177,7 @@ class AccountPetugasActivity : AppCompatActivity() {
     }
 
     private fun setupClicks() {
-        btnEditProfilTop.setOnClickListener {
-            tampilkanEditProfil()
-        }
+        btnEditProfilTop.setOnClickListener { bukaHalaman(HALAMAN_EDIT_PROFIL) }
         menuLogout.setOnClickListener { konfirmasiLogout() }
     }
 
@@ -231,15 +245,15 @@ class AccountPetugasActivity : AppCompatActivity() {
             .show()
     }
 
-    private fun tampilkanEditProfil() {
-        toast("Fitur edit profil dibuka")
-    }
-
     // ---------------------------------------------------------------- Firebase
 
     private fun listenProfil(uid: String) {
         val user = auth.currentUser
         tvUid.text = "${uid.take(4)}…${uid.takeLast(4)}"
+        tvEmail.text = user?.email?.takeIf { it.isNotBlank() } ?: "-"
+        tvBergabung.text = user?.metadata?.creationTimestamp?.let {
+            SimpleDateFormat("d MMMM yyyy", Locale("id", "ID")).format(Date(it))
+        } ?: "-"
         isiProfil(null, null, null, null, true, user?.displayName ?: user?.email)
 
         listeners += db.collection(COL_USERS).document(uid)
@@ -248,6 +262,8 @@ class AccountPetugasActivity : AppCompatActivity() {
                     Log.e(TAG, "Gagal membaca role", err)
                     return@addSnapshotListener
                 }
+                namaUsers = snap?.getString("nama") ?: snap?.getString("name")
+                if (namaPetugas.isNullOrBlank()) tampilkanNama(namaUsers ?: user?.displayName ?: user?.email)
                 terapkanRole(snap?.getString("role"), uid)
             }
 
@@ -258,57 +274,105 @@ class AccountPetugasActivity : AppCompatActivity() {
                     return@addSnapshotListener
                 }
                 if (snap == null || !snap.exists()) return@addSnapshotListener
+                namaPetugas = snap.getString("nama")
                 isiProfil(
                     snap.getString("nama"), snap.getString("nip"),
-                    snap.getString("cabang"), snap.getString("shift"),
+                    snap.getString("cabang"),
+                    snap.getString("telepon"),
                     snap.getBoolean("aktif") ?: true,
-                    user?.displayName ?: user?.email
+                    namaUsers ?: user?.displayName ?: user?.email
                 )
             }
     }
 
+    private fun tampilkanNama(nama: String?) {
+        val n = nama?.takeIf { it.isNotBlank() } ?: "Petugas"
+        tvStaffName.text = n
+        tvAvatarPetugas.text = n.trim().take(1).uppercase().ifEmpty { "P" }
+    }
+
+    private val formatWaktu by lazy { SimpleDateFormat("d MMM yyyy, HH:mm", Locale("id", "ID")) }
+
+    private fun waktuText(d: Date?): String = d?.let { formatWaktu.format(it) } ?: "-"
+
+    /**
+     * Statistik petugas:
+     * - Total servis selesai yang ditangani + waktu servis terakhir diselesaikan (petugasId, completedAt)
+     * - Waktu terakhir mengonfirmasi booking (confirmedBy, confirmedAt)
+     * Hanya filter 1 field di server (tanpa composite index); status disaring di aplikasi.
+     */
     private fun listenServisSelesai(uid: String) {
         regServis?.remove()
-        var q: Query = db.collection(COL_BOOKING).whereIn("status", STATUS_SELESAI)
-        if (!isPemilik) q = q.whereEqualTo(FIELD_PETUGAS, uid)
-        regServis = q.addSnapshotListener { snap, err ->
-            if (err != null) {
-                Log.e(TAG, "Gagal membaca servis selesai", err)
-                return@addSnapshotListener
+        regServis = db.collection(COL_BOOKING)
+            .whereEqualTo(FIELD_PETUGAS, uid)
+            .addSnapshotListener { snap, err ->
+                if (err != null) {
+                    Log.e(TAG, "Gagal membaca servis selesai", err)
+                    toast("Gagal memuat total servis")
+                    return@addSnapshotListener
+                }
+                val selesai = snap?.documents?.filter { d ->
+                    d.getString("status")?.trim()?.uppercase() in STATUS_SELESAI
+                }.orEmpty()
+                tvServisCount.text = selesai.size.toString()
+                tvTerakhirSelesai.text = waktuText(
+                    selesai.mapNotNull { it.getTimestamp("completedAt")?.toDate() }.maxOrNull()
+                )
             }
-            val awalHari = Calendar.getInstance().apply {
-                set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0)
-                set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0)
-            }.timeInMillis
-            val jumlah = snap?.documents?.count { d: DocumentSnapshot ->
-                ((d.get(FIELD_TANGGAL) as? Timestamp)?.toDate()?.time ?: 0L) >= awalHari
-            } ?: 0
-            tvServisCount.text = "$jumlah Servis"
-        }
+
+        regKonfirmasi?.remove()
+        regKonfirmasi = db.collection(COL_BOOKING)
+            .whereEqualTo("confirmedBy", uid)
+            .addSnapshotListener { snap, err ->
+                if (err != null) {
+                    Log.e(TAG, "Gagal membaca konfirmasi", err)
+                    return@addSnapshotListener
+                }
+                tvTerakhirKonfirmasi.text = waktuText(
+                    snap?.documents?.mapNotNull { it.getTimestamp("confirmedAt")?.toDate() }?.maxOrNull()
+                )
+            }
     }
 
     private fun terapkanRole(roleRaw: String?, uid: String) {
         val role = roleRaw?.trim()?.lowercase()
-        if (role != "pemilik" && role != "petugas") {
+        if (role != "pemilik" && role != "admin" && role != "petugas") {
             toast("Akun ini bukan akun staf")
             auth.signOut()
             keLogin()
             return
         }
+        // Sama seperti HomeActivityPetugas: hanya pemilik yang tanpa statistik servis & punya menu laporan.
+        // Admin/petugas = staf yang menangani servis.
         val pemilik = role == "pemilik"
+        val labelRole = when (role) {
+            "pemilik" -> "Pemilik"
+            "admin" -> "Admin"
+            else -> "Petugas"
+        }
+        tvRoleChip.text = labelRole
         if (roleDimuat && pemilik == isPemilik) return
         roleDimuat = true
         isPemilik = pemilik
 
-        tvRoleChip.text = if (pemilik) "Pemilik" else "Petugas Bengkel"
-
         buildMenu()
-        listenServisSelesai(uid)
+
+        if (pemilik) {
+            // Pemilik tidak menampilkan statistik servis
+            regServis?.remove()
+            regServis = null
+            regKonfirmasi?.remove()
+            regKonfirmasi = null
+            llStatServis.visibility = View.GONE
+        } else {
+            llStatServis.visibility = View.VISIBLE
+            listenServisSelesai(uid)
+        }
     }
 
     private fun isiProfil(
         nama: String?, nip: String?, cabang: String?,
-        shift: String?, aktif: Boolean, fallbackNama: String?
+        telepon: String?, aktif: Boolean, fallbackNama: String?
     ) {
         val namaTaniya = nama?.takeIf { it.isNotBlank() }
             ?: fallbackNama?.takeIf { it.isNotBlank() } ?: "Petugas"
@@ -316,7 +380,7 @@ class AccountPetugasActivity : AppCompatActivity() {
         tvStaffName.text = namaTaniya
         tvNip.text = nip?.takeIf { it.isNotBlank() } ?: "-"
         tvBranch.text = cabang?.takeIf { it.isNotBlank() } ?: "-"
-        tvShift.text = shift?.takeIf { it.isNotBlank() } ?: "Shift Pagi"
+        tvTelepon.text = telepon?.takeIf { it.isNotBlank() } ?: "-"
 
         tvStatusAktif.text = if (aktif) "Aktif" else "Nonaktif"
         tvStatusAktif.setTextColor(
