@@ -1,5 +1,6 @@
 package id.ac.stmi.mobileproject
 
+import android.content.res.ColorStateList
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -21,7 +22,7 @@ data class Layanan(
 
 class LayananAdapter(
     private val onEdit: (Layanan) -> Unit,
-    private val onDelete: (Layanan) -> Unit
+    private val onToggleAktif: (Layanan) -> Unit
 ) : RecyclerView.Adapter<LayananAdapter.VH>() {
 
     private var data: List<Layanan> = emptyList()
@@ -55,7 +56,18 @@ class LayananAdapter(
         )
 
         holder.b.btnEdit.setOnClickListener { onEdit(l) }
-        holder.b.btnHapus.setOnClickListener { onDelete(l) }
+
+        // Layanan tidak dihapus (riwayat booking merujuknya), hanya dinonaktifkan / diaktifkan.
+        // Tombol ini dulu "Hapus"; id-nya (btnHapus) dipertahankan agar layout tidak perlu diubah.
+        holder.b.btnHapus.setImageResource(
+            if (l.aktif) R.drawable.ic_layanan_nonaktifkan else R.drawable.ic_layanan_aktifkan
+        )
+        holder.b.btnHapus.imageTintList = ColorStateList.valueOf(
+            ContextCompat.getColor(ctx, if (l.aktif) R.color.bk_text_secondary else R.color.bk_primary)
+        )
+        holder.b.btnHapus.contentDescription =
+            if (l.aktif) "Nonaktifkan layanan" else "Aktifkan layanan"
+        holder.b.btnHapus.setOnClickListener { onToggleAktif(l) }
     }
 
     override fun getItemCount() = data.size

@@ -33,7 +33,7 @@ class LayananActivityPetugas : AppCompatActivity() {
     private val db by lazy { FirebaseFirestore.getInstance() }
     private val adapter = LayananAdapter(
         onEdit = { bukaForm(it) },
-        onDelete = { konfirmasiHapus(it) }
+        onToggleAktif = { ubahStatusAktif(it) }
     )
     private var listener: ListenerRegistration? = null
     private var semuaLayanan: List<Layanan> = emptyList()
@@ -196,17 +196,33 @@ class LayananActivityPetugas : AppCompatActivity() {
         }
     }
 
-    private fun konfirmasiHapus(layanan: Layanan) {
-        AlertDialog.Builder(this)
-            .setTitle("Hapus layanan?")
-            .setMessage("\"${layanan.nama}\" akan dihapus permanen dan tidak bisa dikembalikan.")
-            .setPositiveButton("Hapus") { _, _ ->
-                db.collection(KOLEKSI_LAYANAN).document(layanan.id).delete()
-                    .addOnSuccessListener { toast("Layanan dihapus") }
-                    .addOnFailureListener { gagal(it) }
+    /**
+     * Layanan tidak pernah dihapus (rules Firestore melarang delete, dan booking lama
+     * merujuk layanan ini). Yang dilakukan: nonaktifkan (disembunyikan dari customer) atau aktifkan lagi.
+     */
+    private fun ubahStatusAktif(layanan: Layanan) {
+        if (layanan.aktif) {
+            AlertDialog.Builder(this)
+                .setTitle("Nonaktifkan layanan?")
+                .setMessage(
+                    "\"${layanan.nama}\" tidak akan tampil lagi di aplikasi customer. " +
+                            "Riwayat booking tetap aman dan layanan bisa diaktifkan kembali kapan saja."
+                )
+                .setPositiveButton("Nonaktifkan") { _, _ -> setAktif(layanan, false) }
+                .setNegativeButton("Batal", null)
+                .show()
+        } else {
+            setAktif(layanan, true)
+        }
+    }
+
+    private fun setAktif(layanan: Layanan, aktif: Boolean) {
+        db.collection(KOLEKSI_LAYANAN).document(layanan.id)
+            .update(mapOf("aktif" to aktif, "updatedAt" to FieldValue.serverTimestamp()))
+            .addOnSuccessListener {
+                toast(if (aktif) "Layanan diaktifkan" else "Layanan dinonaktifkan")
             }
-            .setNegativeButton("Batal", null)
-            .show()
+            .addOnFailureListener { gagal(it) }
     }
 
     private fun gagal(e: Exception) = toast("Gagal: ${e.message}", panjang = true)
